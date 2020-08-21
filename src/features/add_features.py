@@ -29,6 +29,7 @@ def features_graph(df):
     df['betweenness'] = df['iso2'].map(betw)
     df['degree'] = df['iso2'].map(degree)
     df['closeness'] = df['iso2'].map(closeness)
+    df.drop(labels='iso2', axis=1, inplace=True)
 
     return df
 
