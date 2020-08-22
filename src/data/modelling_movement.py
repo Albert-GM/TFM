@@ -1,20 +1,22 @@
 # =============================================================================
-# Script that models the movement of people between countries.
+# Makes a model simulating the movement of people between countries.
 # =============================================================================
 
 
 import pandas as pd
 import numpy as np
 import networkx as nx
+import os
+import re
+root_project = re.findall(r'(^\S*TFM_AGM)', os.getcwd())[0]
 
-
-df = pd.read_pickle('../../data/interim/country_info_nonans.pickle')
+df = pd.read_pickle(f"{root_project}/data/interim/country_info_nonans.pickle")
 
 df_move = df.loc[:, ['country_name', 'country_code']]
-# arrivals and departures by country and day
+# Arrivals and departures by country and day
 df_move['arrivals/day'] = df['arrivals'] / 365
 df_move['departures/day'] = df['departures'] / 365
-# ratio of arrivals to total by country
+# Ratio of arrivals to total by country
 df_move['prop_arrivals'] = df_move['arrivals/day'] / \
     np.sum(df_move['arrivals/day'])
 
@@ -25,7 +27,7 @@ countrycode_to_departures = pd.Series(
     df_move['departures/day'].values, index=df_move['country_code']).to_dict()
 
 
-# add to the dataframe a column with info about the number of people going from
+# Add to the dataframe a column with info about the number of people going from
 # one country to another
 l_people = []
 df_people = df.copy()
@@ -44,7 +46,7 @@ for country in df.iterrows():
 df['departures/day'] = l_people
 df.drop('destinations', axis=1, inplace=True)
 
-# create a graph and an origin-destination matrix
+# Make origin-destination matrix from graph
 H = nx.DiGraph()
 
 for index, country in df.iterrows():
@@ -55,5 +57,5 @@ for index, country in df.iterrows():
 OD_matrix = nx.attr_matrix(H, edge_attr='people', rc_order=df['country_code'])
 
 
-df.to_pickle('../../data/interim/country_info_final.pickle')
-np.save('../../data/interim/od_matrix.npy', OD_matrix)
+df.to_pickle(f"{root_project}/data/interim/country_info_final.pickle")
+np.save(f"{root_project}/data/interim/od_matrix.npy", OD_matrix)

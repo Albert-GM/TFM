@@ -12,7 +12,7 @@ import pandas as pd
 from tqdm import tqdm
 from sklearn.model_selection import ParameterSampler
 from scipy.stats import uniform, expon, randint
-from src.utils.help_func import construct_dataframe
+from src.utils.help_func import construct_dataframe, top_k_connected
 from src.models.sir_model import sir_model
 
 
@@ -22,9 +22,10 @@ df_countries = pd.read_pickle(
 
 output_mode = 0
 
+
+
 input_dataframe = []
 
-# parametersampler
 R0 = uniform(loc=2, scale=20)
 Tr = uniform(loc=2, scale=20)
 omega = expon(loc=0.01, scale=0.1)
@@ -46,8 +47,8 @@ param_grid = {'R0' : R0,
               'countries' : countries }
 
 rng = np.random.RandomState(42)
-param_list = list(ParameterSampler(param_grid, n_iter=50000,
-                                   random_state=rng))
+param_list = list(ParameterSampler(param_grid, n_iter=10000,
+                                    random_state=rng))
 
 
 for simulation in tqdm(param_list):
@@ -65,14 +66,20 @@ for simulation in tqdm(param_list):
             simulation['react_time']))
     
     
-    
-# R0 = uniform(loc=1, scale=10)
-# Tr = uniform(loc=15, scale=20)
-# omega = expon(scale=0.1)
+df_simulation = construct_dataframe(input_dataframe, output_mode)
+df_simulation.to_pickle('../../data/processed/sir_simulation_10k_v2_rev10_2.pickle')
+
+
+# input_dataframe = []
+
+
+# R0 = uniform(loc=2, scale=20)
+# Tr = uniform(loc=2, scale=20)
+# omega = expon(loc=0.01, scale=0.1)
 # limit_deaths = randint(low=1, high=1000)
 # n_closed = randint(low=0, high=20)
-# react_time = randint(low=1, high=30)   
-# countries = top_k_connected(df_countries, 25)
+# react_time = randint(low=15, high=30)  
+# countries = top_k_connected(df_countries, 40)
 
 # param_grid = {'R0' : R0,
 #               'Tr' : Tr,
@@ -82,7 +89,7 @@ for simulation in tqdm(param_list):
 #               'react_time' : react_time,
 #               'countries' : countries }
 # param_list = list(ParameterSampler(param_grid, n_iter=50000,
-#                                    random_state=rng))
+#                                     random_state=rng))
 
 # for simulation in tqdm(param_list):
 #     input_dataframe.append(
@@ -99,10 +106,8 @@ for simulation in tqdm(param_list):
 #             simulation['react_time']))
 
 
-df_simulation = construct_dataframe(input_dataframe, output_mode)
+# df_simulation = construct_dataframe(input_dataframe, output_mode)
 
-
-df_simulation.to_pickle('../../data/processed/sir_simulation_50k_rev10.pickle')
-# df_simulation.to_pickle('../../data/processed/sir_simulation_1k_rev10.pickle')
+# df_simulation.to_pickle('../../data/processed/sir_simulation_50k_v3_rev10.pickle')
 
 

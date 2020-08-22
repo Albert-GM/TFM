@@ -1,8 +1,16 @@
+# =============================================================================
+# Own functions that facilitate repetitive actions
+# =============================================================================
+
+
 import pandas as pd
 import numpy as np
 import networkx as nx
 import json
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
+import os
+import re
+root_project = re.findall(r'(^\S*TFM_AGM)', os.getcwd())[0]
 
 
 def extract_indicator(df, indicator, initial_year=None, final_year=None):
@@ -16,7 +24,7 @@ def extract_indicator(df, indicator, initial_year=None, final_year=None):
 
     Parameters
     ---------
-    df : dataframe
+    df : pandas.DataFrame
         Dataframe containing the world indicators by country and year
     indicator : string
         Name of the indicador we want to exctract the information
@@ -25,7 +33,9 @@ def extract_indicator(df, indicator, initial_year=None, final_year=None):
 
     Returns
     --------
-    Dataframe with the information about the indicador with the country name as row index and years as columns
+    pandas.DataFrame
+        Dataframe with the information about the indicador with the country
+        name as row index and years as columns
 
     """
 
@@ -48,7 +58,7 @@ def extract_indicator(df, indicator, initial_year=None, final_year=None):
 
 def add_countryandloc(df, df_continents, df_coord):
     """
-    Add to a dataframe columns with the Continent Name, Continent Code;
+    Adds to a dataframe columns with the Continent Name, Continent Code;
     Longitude and Latitude of the country
 
     """
@@ -65,7 +75,7 @@ def add_countryandloc(df, df_continents, df_coord):
 
 def last_values(df):
     """
-    It returns a dataframe with the last values available by country. The
+    Returns a dataframe with the last values available by country. The
     dataframe has country as index and years as columns. First is necessary to
     apply extract_indicator to the original dataframe from world_indicators.
 
@@ -104,8 +114,8 @@ def results_searchcv(estimator, X_test=None, y_test=None):
     ----------
     estimator : sklearn.model_selection._search.GridSearchCV
         A trained estimator.
-    X_test : dataframe or array
-    y_test : dataframe series or array
+    X_test : pandas.DataFrame or array
+    y_test : pandas.DataFrame, pandas.Series or array
 
     Returns
     -------
@@ -137,21 +147,10 @@ def construct_dataframe(l, output_mode=0):
 
     Returns
     -------
-    Dataframe
+    pandas.DataFrame
 
     """
-    # if output_mode == 0:
-    #     columns = [
-    #         'initial_country',
-    #         'idx_country',
-    #         'R0',
-    #         'Tc',
-    #         'Tr',
-    #         'omega',
-    #         'total_infected',
-    #         'total_death',
-    #         'total_recovered']
-        
+
     if output_mode == 0:
         columns = [
             'initial_country',
@@ -207,39 +206,33 @@ def construct_dataframe(l, output_mode=0):
 
     return pd.DataFrame(l, columns=columns)
 
-def top_k_connected(df, k):
-    
-    graph = nx.read_gpickle('../../data/interim/routes_countries.gpickle')
 
-    with open('../../data/interim/alpha3_to_alpha2.txt', 'r') as file:
+def top_k_connected(df, k):
+    """
+    Provides the k countries with higher degree
+
+    Parameters
+    ----------
+    df : pandas.DataFrame
+    k : int
+        Number of countries to return
+
+    Returns
+    -------
+    pandas.DataFrame
+        k countries with higher degree.
+
+    """
+
+    graph = nx.read_gpickle(
+        f"{root_project}/data/interim/routes_countries.gpickle")
+
+    with open(f"{root_project}/data/interim/alpha3_to_alpha2.txt", 'r') as file:
         alpha3_to_alpha2 = json.load(file)
 
     degree = dict(nx.degree_centrality(graph))
     df['iso2'] = df['country_code'].map(alpha3_to_alpha2)
     df['degree'] = df['iso2'].map(degree)
-    
-    return df.sort_values(by='degree', ascending=False)['country_code'].iloc[:k].tolist()
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
+
+    return df.sort_values(by='degree', ascending=False)[
+        'country_code'].iloc[:k].tolist()
