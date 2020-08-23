@@ -8,6 +8,7 @@ import numpy as np
 import networkx as nx
 import json
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
+from sklearn.model_selection import train_test_split
 import os
 import re
 root_project = re.findall(r'(^\S*TFM_AGM)', os.getcwd())[0]
@@ -15,7 +16,7 @@ root_project = re.findall(r'(^\S*TFM_AGM)', os.getcwd())[0]
 
 def extract_indicator(df, indicator, initial_year=None, final_year=None):
     """
-    Function that allows to select the indicator and the years or year we are
+    Selects the indicator and the years or year we are
     interested about. If intial year and final year is passed, the function
     returns the information from intial year to final year.If not initial year
     and final year is passed, the function returns the information of all the
@@ -75,7 +76,7 @@ def add_countryandloc(df, df_continents, df_coord):
 
 def last_values(df):
     """
-    Returns a dataframe with the last values available by country. The
+    Provides a dataframe with the last values available by country. The
     dataframe has country as index and years as columns. First is necessary to
     apply extract_indicator to the original dataframe from world_indicators.
 
@@ -236,3 +237,40 @@ def top_k_connected(df, k):
 
     return df.sort_values(by='degree', ascending=False)[
         'country_code'].iloc[:k].tolist()
+
+
+def make_train_val_test(df, test_val_prop=0.2):
+    """
+    Makes a train, validation and test sets according to the desired proportion
+    for the test and validation sets. Validation set and test set are the same
+    size
+
+    Parameters
+    ----------
+    df : pandas.DataFrame
+    test_val_prop : int, optional
+        DESCRIPTION. The default is 0.2.
+
+    Returns
+    -------
+    X_train : pandas.DataFrame
+    X_val : pandas.DataFrame
+    X_test : pandas.DataFrame
+    y_train : pandas.Series
+    y_val : pandas.Series
+    y_test : pandas.Series
+
+    """
+
+    X = df.drop('total_death', axis=1)
+    y = df['total_death']
+
+    train_val_size = int(df.shape[0] * test_val_prop)
+
+    X_train_val, X_test, y_val_train, y_test = train_test_split(
+        X, y, test_size=train_val_size, random_sate=42, shuffle=True)
+    X_train, X_val, y_train, y_val = train_test_split(
+        X_train_val, y_val_train, test_size=train_val_size, random_sate=42,
+        shuffle=True)
+
+    return X_train, X_val, X_test, y_train, y_val, y_test

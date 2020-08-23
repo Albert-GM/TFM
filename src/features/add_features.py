@@ -1,14 +1,29 @@
+# =============================================================================
+# Adds features to the data obtained from the simulation to train a machine
+# learning model.
+# =============================================================================
+
+
 import pandas as pd
 import json
 import networkx as nx
 import os
 import re
-from sklearn.model_selection import train_test_split
 
 root_project = re.findall(r'(^\S*TFM_AGM)', os.getcwd())[0]
 
 
 def get_data():
+    """
+    Gets necesseray data for computing the features.
+
+    Returns
+    -------
+    graph : networkx.graph
+    df_info : pandas.DataFrame
+    alpha3_to_alpha2 : dictionary
+
+    """
 
     graph = nx.read_gpickle(
         f'{root_project}/data/interim/routes_countries.gpickle')
@@ -22,6 +37,19 @@ def get_data():
 
 
 def features_graph(df):
+    """
+    Adds to the dataframe features about the graph that represents the connection
+    between countries.
+
+    Parameters
+    ----------
+    df : pandas.DataFrame
+
+    Returns
+    -------
+    df : pandas.DataFrame
+
+    """
 
     data = get_data()
     graph = data[0]
@@ -41,6 +69,19 @@ def features_graph(df):
 
 
 def features_pop(df):
+    """
+    Adds to the dataframe the population about the initial country where the
+    disease begins.
+
+    Parameters
+    ----------
+    df : pandas.DataFrame
+
+    Returns
+    -------
+    df : pandas.DataFrame
+
+    """
 
     df_info = get_data()[1]
     dict_pop_country = df_info[['country_code', 'total_pop']].set_index(
@@ -50,20 +91,7 @@ def features_pop(df):
     return df
 
 
-def make_train_val_test(df, test_val_prop=0.2):
 
-    X = df.drop('total_death', axis=1)
-    y = df['total_death']
-
-    train_val_size = int(df.shape[0] * test_val_prop)
-
-    X_train_val, X_test, y_val_train, y_test = train_test_split(
-        X, y, test_size=train_val_size, random_sate=42, shuffle=True)
-    X_train, X_val, y_train, y_val = train_test_split(
-        X_train_val, y_val_train, test_size=train_val_size, random_sate=42,
-        shuffle=True)
-
-    return X_train, X_val, X_test, y_train, y_val, y_test
 
 
 if __name__ == '__main__':

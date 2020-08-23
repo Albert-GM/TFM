@@ -4,7 +4,7 @@
 
 # adding directory to pythonpath for allow own functions
 import sys, os ,re
-root_project = re.findall(r'(^\S*TFM_AGM)', os.getcwd())[0]
+root_project = re.findall(r'(^\S*TFM-master)', os.getcwd())[0]
 sys.path.append(root_project)
 
 import numpy as np
