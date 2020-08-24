@@ -10,7 +10,7 @@ import networkx as nx
 import os
 import re
 
-root_project = re.findall(r'(^\S*TFM_AGM)', os.getcwd())[0]
+root_project = re.findall(r'(^\S*TFM-master)', os.getcwd())[0]
 
 
 def get_data():
@@ -101,16 +101,18 @@ if __name__ == '__main__':
         f'{root_project}/data/processed/sir_simulation_50k_v2_rev10.pickle')
     df_3 = pd.read_pickle(
         f'{root_project}/data/processed/sir_simulation_10k_v2_rev10_2.pickle')
-    # from here is data based on mistakes of previous models
     df_4 = pd.read_pickle(
+        f'{root_project}/data/processed/sir_simulation_100k_v2_rev10_3.pickle')
+    # from here is data based on mistakes of previous models
+    df_5 = pd.read_pickle(
         f'{root_project}/data/processed/sir_simulation_50k_v3_rev10.pickle')
-    df_main = pd.concat([df_1, df_2, df_3, df_4])
+    df_main = pd.concat([df_1, df_2, df_3, df_4, df_5])
     df_main.reset_index(inplace=True, drop=True)
     # add new features to the sir simulation results
     df_main = features_graph(df_main)
     df_main = features_pop(df_main)
 
-    df_main.to_pickle(f"{root_project}/data/processed/features_model.pickle")
+    df_main.to_pickle(f"{root_project}/data/processed/features_model_rev2.pickle")
 
     # divide de data in test, validation and train sets
 

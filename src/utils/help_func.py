@@ -11,7 +11,7 @@ from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from sklearn.model_selection import train_test_split
 import os
 import re
-root_project = re.findall(r'(^\S*TFM_AGM)', os.getcwd())[0]
+root_project = re.findall(r'(^\S*TFM-master)', os.getcwd())[0]
 
 
 def extract_indicator(df, indicator, initial_year=None, final_year=None):
@@ -134,7 +134,7 @@ def results_searchcv(estimator, X_test=None, y_test=None):
     print("==============")
 
 
-def construct_dataframe(l, output_mode=0):
+def construct_dataframe(l):
     """
     Makes a dataframe with the output of the sir_model function dependeding on
     the output_mode variable
@@ -152,29 +152,7 @@ def construct_dataframe(l, output_mode=0):
 
     """
 
-    if output_mode == 0:
-        columns = [
-            'initial_country',
-            'idx_country',
-            'R0',
-            'Tc',
-            'Tr',
-            'omega',
-            'inf_power_1',
-            'inf_power_2',
-            'gradient_inf',
-            'mort_power_1',
-            'mort_power_2',
-            'mort_power_3',
-            'gradient_mort',
-            'limit_deaths',
-            'n_closed',
-            'react_time',
-            'total_infected',
-            'total_death',
-            'total_recovered']
-    else:
-        columns = [
+   columns = [
             'initial_country',
             'idx_country',
             'R0',
@@ -249,7 +227,6 @@ def make_train_val_test(df, test_val_prop=0.2):
     ----------
     df : pandas.DataFrame
     test_val_prop : int, optional
-        DESCRIPTION. The default is 0.2.
 
     Returns
     -------
@@ -268,9 +245,13 @@ def make_train_val_test(df, test_val_prop=0.2):
     train_val_size = int(df.shape[0] * test_val_prop)
 
     X_train_val, X_test, y_val_train, y_test = train_test_split(
-        X, y, test_size=train_val_size, random_sate=42, shuffle=True)
+        X, y, test_size=train_val_size, random_state=42, shuffle=True)
     X_train, X_val, y_train, y_val = train_test_split(
-        X_train_val, y_val_train, test_size=train_val_size, random_sate=42,
+        X_train_val, y_val_train, test_size=train_val_size, random_state=42,
         shuffle=True)
-
+    
+    print(f"Train set: {X_train.shape}")
+    print(f"Validation set: {X_val.shape}")
+    print(f"Test set: {X_test.shape}")
+    
     return X_train, X_val, X_test, y_train, y_val, y_test

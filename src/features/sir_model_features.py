@@ -47,11 +47,12 @@ param_grid = {'R0' : R0,
               'countries' : countries }
 
 rng = np.random.RandomState(42)
-param_list = list(ParameterSampler(param_grid, n_iter=10000,
+param_list = list(ParameterSampler(param_grid, n_iter=5,
                                     random_state=rng))
 
 
 for simulation in tqdm(param_list):
+    print(OD.sum(), "antes de la simulacion\n=======")
     input_dataframe.append(
         sir_model(
             df_countries,
@@ -66,8 +67,8 @@ for simulation in tqdm(param_list):
             simulation['react_time']))
     
     
-df_simulation = construct_dataframe(input_dataframe, output_mode)
-df_simulation.to_pickle('../../data/processed/sir_simulation_10k_v2_rev10_2.pickle')
+# df_simulation = construct_dataframe(input_dataframe, output_mode)
+# df_simulation.to_pickle('../../data/processed/sir_simulation_100k_v2_rev10_3.pickle')
 
 
 # input_dataframe = []

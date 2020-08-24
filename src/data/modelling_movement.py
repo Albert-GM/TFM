@@ -8,7 +8,7 @@ import numpy as np
 import networkx as nx
 import os
 import re
-root_project = re.findall(r'(^\S*TFM_AGM)', os.getcwd())[0]
+root_project = re.findall(r'(^\S*TFM-master)', os.getcwd())[0]
 
 df = pd.read_pickle(f"{root_project}/data/interim/country_info_nonans.pickle")
 
