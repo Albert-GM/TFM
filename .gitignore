@@ -91,4 +91,4 @@ target/
 .mypy_cache/
 
 # custom
-models/
+/models/
