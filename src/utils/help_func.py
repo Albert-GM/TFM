@@ -7,6 +7,8 @@ import pandas as pd
 import numpy as np
 import networkx as nx
 import json
+import matplotlib.pyplot as plt
+import seaborn as sns
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from sklearn.model_selection import train_test_split
 import os
@@ -105,7 +107,7 @@ def last_values(df):
     return df2[['Country Name', 'Country Code', 'last_value']]
 
 
-def results_searchcv(estimator, X_test=None, y_test=None):
+def results_searchcv(predictor, X_test=None, y_test=None):
     """
     Prints out useful information about a trained GridsearchCV object or a
     RandomizedSearchCV object from the sklearn library. Given a pair X_test,
@@ -113,8 +115,8 @@ def results_searchcv(estimator, X_test=None, y_test=None):
 
     Parameters
     ----------
-    estimator : sklearn.model_selection._search.GridSearchCV
-        A trained estimator.
+    predictor : sklearn.model_selection._search.GridSearchCV
+        A trained predictor.
     X_test : pandas.DataFrame or array
     y_test : pandas.DataFrame, pandas.Series or array
 
@@ -123,14 +125,14 @@ def results_searchcv(estimator, X_test=None, y_test=None):
     None.
 
     """
-
-    print(f"The best score is:\n{estimator.best_score_}")
-    print(f"The best parameters found are:\n{estimator.best_params_}")
+    print("==============")
+    print(f"Best score:\n{predictor.best_score_}")
+    print(f"Best parameters found:\n{predictor.best_params_}")
     if X_test is not None and y_test is not None:
-        print(f"The score in test is:\n{estimator.score(X_test, y_test)}")
-        y_predicted = estimator.predict(X_test)
-        print(f"The r2-square is\n{r2_score(y_test, y_predicted)}")
-        print(f"The MAE is:\n{mean_absolute_error(y_test, y_predicted)}")
+        print(f"Score in test:\n{predictor.score(X_test, y_test)}")
+        y_predicted = predictor.predict(X_test)
+        print(f"R^2 in test\n{r2_score(y_test, y_predicted)}")
+        print(f"MAE in test:\n{mean_absolute_error(y_test, y_predicted)}")
     print("==============")
 
 
@@ -152,7 +154,7 @@ def construct_dataframe(l):
 
     """
 
-   columns = [
+    columns = [
             'initial_country',
             'idx_country',
             'R0',
@@ -217,16 +219,20 @@ def top_k_connected(df, k):
         'country_code'].iloc[:k].tolist()
 
 
-def make_train_val_test(df, test_val_prop=0.2):
+def make_train_val_test(df, test_val_prop=0.2, out_mode=0):
     """
     Makes a train, validation and test sets according to the desired proportion
     for the test and validation sets. Validation set and test set are the same
-    size
+    size. If prefered it can returns the train and validation sets together
+    to use a cross validation method.
 
     Parameters
     ----------
     df : pandas.DataFrame
     test_val_prop : int, optional
+    out_mode : int
+        0 or 1. 0 if all three sets are wanted. 1 if train and validations sets
+        are wanted together.
 
     Returns
     -------
@@ -239,19 +245,93 @@ def make_train_val_test(df, test_val_prop=0.2):
 
     """
 
+    df = df.iloc[::-1]
     X = df.drop('total_death', axis=1)
     y = df['total_death']
 
     train_val_size = int(df.shape[0] * test_val_prop)
 
-    X_train_val, X_test, y_val_train, y_test = train_test_split(
-        X, y, test_size=train_val_size, random_state=42, shuffle=True)
+    X_train_val, X_test, y_train_val, y_test = train_test_split(
+        X, y, test_size=train_val_size, random_state=42, shuffle=False)
     X_train, X_val, y_train, y_val = train_test_split(
-        X_train_val, y_val_train, test_size=train_val_size, random_state=42,
-        shuffle=True)
+        X_train_val, y_train_val, test_size=train_val_size, random_state=42,
+        shuffle=False)
     
-    print(f"Train set: {X_train.shape}")
-    print(f"Validation set: {X_val.shape}")
-    print(f"Test set: {X_test.shape}")
     
-    return X_train, X_val, X_test, y_train, y_val, y_test
+    if out_mode==0:
+        print(f"Train set: {X_train.shape}")
+        print(f"Validation set: {X_val.shape}")
+        print(f"Test set: {X_test.shape}")
+        return X_train, X_val, X_test, y_train, y_val, y_test
+    elif out_mode==1:
+        print(f"Train_validation set: {X_train_val.shape}")
+        print(f"Test set: {X_test.shape}")
+        return X_train_val, y_train_val, X_test, y_test
+    else:
+        raise ValueError('Incorrect out_mode value.')
+
+
+def errors_distribution(model, X_test, y_test, X_train, n=200,
+                        X_test_scaled=None):
+    """
+    Prints out some plots to compare the distribution of the features in the
+    train set against the distribuition of the features in the n samples with
+    higher absoulute value prediction errors. It allows to see in which type
+    of samples the model is predicting worse. If scaled_test='True' pass as
+    extra argument X_test_scaled
+
+    Parameters
+    ----------
+    model : sklearn.estimator
+        A trained sklearn.estimator.
+    X_test : pandas.DataFrame
+    y_test : pandas.DataFrame
+    X_train : pandas.DataFrame
+        Without scaling.
+    n : int, optional
+        Number of samples to consider in the errors set top. The default is 200.
+    X_test_scaled : bool, optional
+        If passed the estimator predicts with scaled data.
+        
+
+    Returns
+    -------
+    None.
+
+    """
+    
+    X_err = X_test.copy()
+    if X_test_scaled is None:
+        X_err['predicted'] = model.predict(X_test)
+    else:
+        X_err['predicted'] = model.predict(X_test_scaled)
+          
+    X_err['real'] = y_test
+    X_err['error'] = X_err['real'] - X_err['predicted']
+    X_err['abs_error'] = np.abs(X_err['error'])
+    X_err_sorted = X_err.sort_values(by='abs_error', ascending=False).iloc[:n]
+
+    for column in X_train.columns:
+      fig, ax = plt.subplots(1, 1, figsize = (15,8))
+      sns.distplot(X_train[column], hist=True, color='skyblue',
+                   label='Original', ax=ax)
+      sns.distplot(X_err_sorted[column], hist=True, color='red',
+                   label='Errors', ax=ax)
+      ax.set(title=column)
+      plt.legend()
+      plt.show()
+      
+    return None
+
+    
+
+
+
+
+
+
+
+
+
+
+

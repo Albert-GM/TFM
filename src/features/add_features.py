@@ -59,7 +59,7 @@ def features_graph(df):
     betw = nx.betweenness_centrality(graph)
     closeness = nx.closeness_centrality(graph)
 
-    df['iso2'] = df['initial_country'].map(alpha3_to_alpha2)
+    df['iso2'] = df['i_country'].map(alpha3_to_alpha2)
     df['betweenness'] = df['iso2'].map(betw)
     df['degree'] = df['iso2'].map(degree)
     df['closeness'] = df['iso2'].map(closeness)
@@ -86,7 +86,7 @@ def features_pop(df):
     df_info = get_data()[1]
     dict_pop_country = df_info[['country_code', 'total_pop']].set_index(
         'country_code').iloc[:, 0].to_dict()
-    df['country_pop'] = df['initial_country'].map(dict_pop_country)
+    df['country_pop'] = df['i_country'].map(dict_pop_country)
 
     return df
 
@@ -95,38 +95,28 @@ def features_pop(df):
 
 
 if __name__ == '__main__':
-    df_1 = pd.read_pickle(
-        f'{root_project}/data/processed/sir_simulation_50k_rev10.pickle')
-    df_2 = pd.read_pickle(
-        f'{root_project}/data/processed/sir_simulation_50k_v2_rev10.pickle')
-    df_3 = pd.read_pickle(
-        f'{root_project}/data/processed/sir_simulation_10k_v2_rev10_2.pickle')
-    df_4 = pd.read_pickle(
-        f'{root_project}/data/processed/sir_simulation_100k_v2_rev10_3.pickle')
-    # from here is data based on mistakes of previous models
-    df_5 = pd.read_pickle(
-        f'{root_project}/data/processed/sir_simulation_50k_v3_rev10.pickle')
-    df_main = pd.concat([df_1, df_2, df_3, df_4, df_5])
-    df_main.reset_index(inplace=True, drop=True)
+    df_1 = pd.read_csv(f'{root_project}/data/processed/simulation_results.csv')
+    df_2 = pd.read_csv(f'{root_project}/data/processed/simulation_results_v2.csv')
+    df_3 = pd.read_csv(f'{root_project}/data/processed/simulation_results_v3.csv')
+    df_4 = pd.read_csv(f'{root_project}/data/processed/simulation_results_v4_errors.csv')
+    df = pd.concat([df_1, df_2, df_3, df_4], ignore_index=True)
     # add new features to the sir simulation results
-    df_main = features_graph(df_main)
-    df_main = features_pop(df_main)
+    df = features_graph(df)
+    df = features_pop(df)
 
-    df_main.to_pickle(f"{root_project}/data/processed/features_model_rev2.pickle")
+    df.to_pickle(f"{root_project}/data/processed/features_model_rev5.pickle")
 
-    # divide de data in test, validation and train sets
 
-    # train_size = 0.6
-    # test_val_size = (1 - train_size) / 2
-    # test_val_size = int(df_main.shape[0] * test_val_size)
 
-    # df_test = df_main.iloc[:test_val_size].sample(
-    #     frac=1).reset_index(drop=True)
-    # df_val = df_main.iloc[test_val_size:test_val_size *
-    #                       2].sample(frac=1).reset_index(drop=True)
-    # df_train = df_main.iloc[test_val_size *
-    #                         2:].sample(frac=1).reset_index(drop=True)
 
-    # df_test.to_pickle(f"{root_project}/data/processed/test_set.pickle")
-    # df_val.to_pickle(f"{root_project}/data/processed/val_set.pickle")
-    # df_train.to_pickle(f"{root_project}/data/processed/train_set.pickle")
+
+
+
+
+
+
+
+
+
+
+
