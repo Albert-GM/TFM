@@ -110,6 +110,8 @@ def first_deceased(new_deceased_world_t, period=14):
 
     day_1 = np.argwhere(new_deceased_world_t > 0)[0, 0]
     day_2 = day_1 + period
+    if day_2 > new_deceased_world_t.shape[0] - 1:
+        day_2 = new_deceased_world_t.shape[0] - 1 
 
     return day_1, day_2
 

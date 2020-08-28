@@ -157,14 +157,11 @@ class SIRD_model:
             'SIRD_world_t': SIRD_t.sum(axis=0),
             'total_infected': new_infected_t.sum() + SIRD_model.initial_infected,
             'total_recovered': new_recovered_t.sum(),
-            'total_deceased': new_deceased_t.sum(),
+            'total_deceased': new_deceased_t.sum()
             }
         
         self.sim_results_['SIRD_world_p_t'] = self.sim_results_[
             'SIRD_world_t'] / self.sim_results_['SIRD_world_t'].sum(axis=0)
-
-
-
 
 
 
@@ -199,36 +196,22 @@ class SIRD_model:
                     day_1,
                     day_2)
         else:
-            inf_pow_1, inf_pow_2,
-            gradient_inf = 0, 0, np.array([0])
+            inf_pow_1, inf_pow_2, gradient_inf = 0, 0, np.array([0])
 
-            mort_pow_1, mort_pow_2, mort_pow_3,
-            gradient_mort = 0, 0, 0, np.array([0])
+            mort_pow_1, mort_pow_2, mort_pow_3, gradient_mort = 0, 0, 0, np.array([0])
 
         
         self.epidemic_features_ = {
-            
             'inf_pow_1': inf_pow_1,
             'inf_pow_2': inf_pow_2,
             'gradient_inf': gradient_inf,
             'mort_pow_1': mort_pow_1,
             'mort_pow_2': mort_pow_2,
             'mort_pow_3': mort_pow_3,
-            'gradient_mort': gradient_mort,
-            
-            
-            
+            'gradient_mort': gradient_mort
             }
 
 
-        # self.epidemic_features_ = {}
-        # self.epidemic_features_['inf_pow_1'] = inf_pow_1
-        # self.epidemic_features_['inf_pow_2'] = inf_pow_2
-        # self.epidemic_features_['gradient_inf'] = gradient_inf
-        # self.epidemic_features_['mort_pow_1'] = mort_pow_1
-        # self.epidemic_features_['mort_pow_2'] = mort_pow_2
-        # self.epidemic_features_['mort_pow_3'] = mort_pow_3
-        # self.epidemic_features_['gradient_mort'] = gradient_mort
 
     def get_simulation_data(self):
         """
@@ -276,7 +259,7 @@ class SIRD_model:
         ----------
 
         param_dict : dict
-            Dictionary containin the class attribute as key and the new attribute
+            Dictionary containing the class attribute as key and the new attribute
             value as value. For example d = {'df': new_dataframe, 'OD': new_OD,
             'sim_time': new_sim_time, 'initial_infected': new_initial_infected}
 
@@ -290,43 +273,6 @@ class SIRD_model:
             setattr(cls, item[0], item[1])
         
         
-    
-    @classmethod
-    def update_countries(cls, df_countries):
-        """
-        Updates the class attribute with information about countries.
-
-        Parameters
-        ----------
-
-        df_countries : pandas.DataFrame
-
-        Returns
-        -------
-        None.
-
-        """
-        cls.df = df_countries
-        
-    @classmethod   
-    def update_OD(cls, OD_matrix):
-        """
-        Updates the class attribute with information about origin-destination
-        matrix.
-
-        Parameters
-        ----------
-
-        OD_matrix : np.array
-            If the number of countries in cls.df is N, this matris is NxN.
-
-        Returns
-        -------
-        None.
-
-        """
-        
-        cls.OD = OD_matrix
 
 
 if __name__ == '__main__':
@@ -536,3 +482,4 @@ if __name__ == '__main__':
     #             self.new_infected_world_t_, self.deaths_t_, self.deaths_world_t_,\
     #             self.new_removed_t_, self.new_infected_world_t_, self.SIR_t_,\
     #             self.SIR_world_t_, self.SIR_p_t_, self.SIR_world_p_t_
+
