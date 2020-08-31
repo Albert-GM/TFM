@@ -6,7 +6,7 @@ root_project = re.findall(r'(^\S*TFM-master)', os.getcwd())[0]
 sys.path.append(root_project)
 
 from src.utils.sird_support import first_deceased, infection_power, mortality_power,\
-    top_k_countries, countries_reaction, closing_country
+    top_k_countries, countries_reaction, closing_country, check_array_div
 import numpy as np
 import pandas as pd
 from scipy.stats import uniform, expon, randint
@@ -30,15 +30,15 @@ class SIRD_model:
     OD = np.load(f"{root_project}/data/interim/od_matrix.npy")
     sim_time = 730
     initial_infected = 1
+    feat_time = 14
 
-    def __init__(self, R0, Tr, omega, i_country, limit_deceased, n_closed,
-                 react_time):
+    def __init__(self, R0, Tr, omega, i_country, n_closed, react_time):
 
         self.R0 = R0
         self.Tr = Tr
         self.omega = omega
         self.i_country = i_country
-        self.limit_deceased = limit_deceased
+        # self.limit_deceased = limit_deceased
         self.n_closed = n_closed
         self.react_time = react_time
 
@@ -88,7 +88,8 @@ class SIRD_model:
 
         self.OD_sim = SIRD_model.OD.copy()  # keep the original OD matrix
 
-        flag = 1  # Flag for countries_reaction function
+        flag_react = 1  
+        flag_deaths = 1
 
         # Start the simulation
         for t in range(SIRD_model.sim_time):
@@ -113,9 +114,11 @@ class SIRD_model:
             # Update population of each country
             N_i = SIRD.sum(axis=1)
             # Compute new infected at t.
-            new_infected = (beta_v * SIRD[:, 0] * SIRD[:, 1]) / N_i
+            new_infected = check_array_div(beta_v * SIRD[:, 0] * SIRD[:, 1],
+                                            N_i)
+            # new_infected = (beta_v * SIRD[:, 0] * SIRD[:, 1]) / N_i
             # If the population N_i of a country is 0, new_infected is 0
-            new_infected = np.where(np.isnan(new_infected), 0, new_infected)
+            # new_infected = np.where(np.isnan(new_infected), 0, new_infected)
             # New infected can't be higher than susceptible
             new_infected = np.where(new_infected > SIRD[:, 0], SIRD[:, 0],
                                     new_infected)
@@ -128,23 +131,43 @@ class SIRD_model:
             SIRD[:, 1] = SIRD[:, 1] + new_infected - new_recovered -new_deceased
             SIRD[:, 2] = SIRD[:, 2] + new_recovered
             SIRD[:, 3] = SIRD[:, 3] + new_deceased
-            SIRD_p = SIRD / SIRD.sum(axis=1).reshape(-1, 1)
+            SIRD_p = check_array_div(SIRD, SIRD.sum(axis=1).reshape(-1, 1))
+            # SIRD_p = SIRD / SIRD.sum(axis=1).reshape(-1, 1)
             # Checking for nan
-            SIRD_p = np.where(np.isnan(SIRD_p), 0, SIRD_p)
+            # SIRD_p = np.where(np.isnan(SIRD_p), 0, SIRD_p)
             # Saving information of the day t
             SIRD_t[:, :, t] = np.floor(SIRD)
             new_infected_t[:, t] = np.floor(new_infected)
             new_recovered_t[:, t] = np.floor(new_recovered)
             new_deceased_t[:, t] = np.floor(new_deceased)
 
-            if new_deceased.sum() > self.limit_deceased and flag:
-                country_react, flag = countries_reaction(t, self.react_time,
-                                                         top_countries)
+            # if new_deceased.sum() > self.limit_deceased and flag:
+            #     country_react, flag = countries_reaction(t, self.react_time,
+            #                                              top_countries)
+            
+            # Compute day first deceased and 2 weeks later
+            if new_deceased_t.sum() > 0 and flag_deaths:
+                if t <= SIRD_model.sim_time - (SIRD_model.feat_time+1):
+                    day_a, day_b = t, t + SIRD_model.feat_time 
+                # Assert that the interval is two weeks in extreme cases
+                else:
+                    day_a = SIRD_model.sim_time - (SIRD_model.feat_time+1)
+                    day_b = (SIRD_model.sim_time-1)
+                if self.n_closed > 0:
+                    country_react, flag_react = countries_reaction(day_b, self.react_time,
+                                                              top_countries)
+                flag_deaths = 0
 
-            if not flag:
-                self.OD_sim = closing_country(country_react, self.OD_sim, t)
+            # if not flag:
+            #     self.OD_sim = closing_country(country_react, self.OD_sim, t)
                 
-
+                
+            if not flag_react:
+                self.OD_sim = closing_country(country_react, self.OD_sim, t)
+        # If flag=1 there are not deceased
+        if flag_deaths:
+            day_a, day_b = 0, 0
+        
         self.sim_results_ = {
             'new_infected_world_t': new_infected_t.sum(axis=0),
             'new_recovered_world_t': new_recovered_t.sum(axis=0),
@@ -153,11 +176,15 @@ class SIRD_model:
             'new_recovered_t': new_recovered_t,
             'new_deceased_t': new_deceased_t,
             'SIRD_t': SIRD_t,
-            'SIRD_p_t': SIRD_t / SIRD_t.sum(axis=1)[:, np.newaxis, :],
+            'SIRD_p_t': check_array_div(SIRD_t,
+                                       SIRD_t.sum(axis=1)[:, np.newaxis, :]),
+            # 'SIRD_p_t': SIRD_t / SIRD_t.sum(axis=1)[:, np.newaxis, :],
             'SIRD_world_t': SIRD_t.sum(axis=0),
             'total_infected': new_infected_t.sum() + SIRD_model.initial_infected,
             'total_recovered': new_recovered_t.sum(),
-            'total_deceased': new_deceased_t.sum()
+            'total_deceased': new_deceased_t.sum(),
+            'day_a': day_a,
+            'day_b': day_b
             }
         
         self.sim_results_['SIRD_world_p_t'] = self.sim_results_[
@@ -180,21 +207,21 @@ class SIRD_model:
             raise ValueError('The model needs to be simulated first.')        
 
         if self.sim_results_['new_deceased_world_t'].sum() > 0:
-            day_1, day_2 = first_deceased(self.sim_results_['new_deceased_world_t'])
+            # day_1, day_2 = first_deceased(self.sim_results_['new_deceased_world_t'])
 
             inf_pow_1, inf_pow_2, gradient_inf = infection_power(
                 self.sim_results_['new_infected_world_t'],
                 self.sim_results_['SIRD_world_t'],
-                day_1,
-                day_2)
+                self.sim_results_['day_a'],
+                self.sim_results_['day_b'])
 
             mort_pow_1, mort_pow_2, mort_pow_3,\
                 gradient_mort = mortality_power(
                     self.sim_results_['new_deceased_world_t'],
                     self.sim_results_['new_infected_world_t'],
                     self.sim_results_['SIRD_world_t'],
-                    day_1,
-                    day_2)
+                    self.sim_results_['day_a'],
+                    self.sim_results_['day_b'])
         else:
             inf_pow_1, inf_pow_2, gradient_inf = 0, 0, np.array([0])
 
@@ -238,7 +265,7 @@ class SIRD_model:
             'omega': self.omega,
             'i_country': self.i_country,
             'idx_country': self.idx_country,
-            'limit_deceased': self.limit_deceased,
+            # 'limit_deceased': self.limit_deceased,
             'n_closed': self.n_closed,
             'react_time': self.react_time,
             'simulation_time': self.sim_time}
@@ -276,8 +303,16 @@ class SIRD_model:
 
 
 if __name__ == '__main__':
-
-    sird_instance = SIRD_model(4, 15, 0.01, 'FRA', 100, 0, 5)
+    
+    R0 = 3.139940
+    Tr = 22.677001		
+    omega = 0.646553
+    # limit_deceased = 181
+    n_closed = 6
+    react_time = 10
+    i_country = 'PYF'
+    sird_instance = SIRD_model(R0, Tr, omega, i_country,
+                               n_closed, react_time)
     sird_instance.simulate()
     sird_instance.compute_disease_features()
     foo = sird_instance.get_simulation_data()

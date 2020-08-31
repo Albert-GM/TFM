@@ -107,7 +107,7 @@ def last_values(df):
     return df2[['Country Name', 'Country Code', 'last_value']]
 
 
-def results_searchcv(predictor, X_test=None, y_test=None):
+def results_searchcv(estimator, X_test=None, y_test=None):
     """
     Prints out useful information about a trained GridsearchCV object or a
     RandomizedSearchCV object from the sklearn library. Given a pair X_test,
@@ -125,67 +125,19 @@ def results_searchcv(predictor, X_test=None, y_test=None):
     None.
 
     """
-    print("==============")
-    print(f"Best score:\n{predictor.best_score_}")
-    print(f"Best parameters found:\n{predictor.best_params_}")
+    print("="*20)
+    print(f"Cross-val best score:\n{estimator.best_score_}")
+    print(f"Cross-val std:\n{estimator.cv_results_['std_test_score'][estimator.best_index_]}")
+    print(f"Best parameters found:\n{estimator.best_params_}")
     if X_test is not None and y_test is not None:
-        print(f"Score in test:\n{predictor.score(X_test, y_test)}")
-        y_predicted = predictor.predict(X_test)
+        print(f"Score in test:\n{estimator.score(X_test, y_test)}")
+        y_predicted = estimator.predict(X_test)
         print(f"R^2 in test\n{r2_score(y_test, y_predicted)}")
         print(f"MAE in test:\n{mean_absolute_error(y_test, y_predicted)}")
-    print("==============")
+    print("="*20)
 
 
-def construct_dataframe(l):
-    """
-    Makes a dataframe with the output of the sir_model function dependeding on
-    the output_mode variable
 
-    Parameters
-    ----------
-    l : list
-        List of tuples, output of the function sir_model.
-    output_mode : int
-        0 by default (brief output), 1 if complete output is desired
-
-    Returns
-    -------
-    pandas.DataFrame
-
-    """
-
-    columns = [
-            'initial_country',
-            'idx_country',
-            'R0',
-            'Tc',
-            'Tr',
-            'omega',
-            'inf_power_1',
-            'inf_power_2',
-            'gradient_inf',
-            'mort_power_1',
-            'mort_power_2',
-            'mort_power_3',
-            'gradient_mort',
-            'limit_deaths',
-            'n_closed',
-            'react_time',
-            'total_infected',
-            'total_death',
-            'total_recovered',
-            'new_infected_t',
-            'new_infected_global_t',
-            'deaths_t',
-            'deaths_global_t',
-            'new_recovered_t',
-            'new_recovered_global_t',
-            'SIR_t',
-            'SIR_global_t',
-            'SIR_p_t',
-            'SIR_global_p_t']
-
-    return pd.DataFrame(l, columns=columns)
 
 
 def top_k_connected(df, k):
@@ -245,9 +197,9 @@ def make_train_val_test(df, test_val_prop=0.2, out_mode=0):
 
     """
 
-    df = df.iloc[::-1]
-    X = df.drop('total_death', axis=1)
-    y = df['total_death']
+    df = df.iloc[::-1] # new simulation data at the beggining of df
+    X = df.drop('total_deceased', axis=1)
+    y = df['total_deceased']
 
     train_val_size = int(df.shape[0] * test_val_prop)
 
@@ -257,21 +209,23 @@ def make_train_val_test(df, test_val_prop=0.2, out_mode=0):
         X_train_val, y_train_val, test_size=train_val_size, random_state=42,
         shuffle=False)
     
-    
+    print("="*20)
     if out_mode==0:
         print(f"Train set: {X_train.shape}")
         print(f"Validation set: {X_val.shape}")
         print(f"Test set: {X_test.shape}")
+        print("="*20)
         return X_train, X_val, X_test, y_train, y_val, y_test
     elif out_mode==1:
         print(f"Train_validation set: {X_train_val.shape}")
         print(f"Test set: {X_test.shape}")
+        print("="*20)
         return X_train_val, y_train_val, X_test, y_test
     else:
         raise ValueError('Incorrect out_mode value.')
 
 
-def errors_distribution(model, X_test, y_test, X_train, n=200,
+def errors_distribution(estimator, X_test, y_test, X_train, n=200,
                         X_test_scaled=None):
     """
     Prints out some plots to compare the distribution of the features in the
@@ -302,9 +256,9 @@ def errors_distribution(model, X_test, y_test, X_train, n=200,
     
     X_err = X_test.copy()
     if X_test_scaled is None:
-        X_err['predicted'] = model.predict(X_test)
+        X_err['predicted'] = estimator.predict(X_test)
     else:
-        X_err['predicted'] = model.predict(X_test_scaled)
+        X_err['predicted'] = estimator.predict(X_test_scaled)
           
     X_err['real'] = y_test
     X_err['error'] = X_err['real'] - X_err['predicted']
@@ -323,7 +277,17 @@ def errors_distribution(model, X_test, y_test, X_train, n=200,
       
     return None
 
+
+
+def plot_predictions(estimator, X_test, y_test, samples=50):
     
+    
+    y_predicted = estimator.predict(X_test)
+    df_predicted = pd.DataFrame({'Actual': y_test, 'Predicted': y_predicted})
+    df_predicted.sample(samples).plot(kind='barh',figsize=(15,50))
+    plt.show()
+    
+    return None
 
 
 

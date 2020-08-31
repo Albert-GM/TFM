@@ -18,7 +18,9 @@ from sklearn.impute import SimpleImputer
 from sklearn.pipeline import Pipeline
 from sklearn.model_selection import train_test_split, GridSearchCV, RandomizedSearchCV
 from sklearn.ensemble import RandomForestRegressor
+from sklearn.tree import DecisionTreeRegressor
 from src.utils.help_func import results_searchcv
+from scipy.stats import randint
 
 
 df_countries = pd.read_pickle(f"{root_project}/data/interim/country_info.pickle")
@@ -84,9 +86,9 @@ random_grid = {
 #     rnd_reg,
 #     random_grid,
 #     random_state=42,
-#     n_iter=500,
+#     n_iter=100,
 #     n_jobs=-1,
-#     verbose=2)
+#     verbose=1)
 # randomsearch.fit(X_train_test, y_train_test)
 # joblib.dump(randomsearch, f"{root_project}/models/randomsearch_departures.pkl")
 
@@ -107,7 +109,11 @@ params = {
 
 # Uncomment next lines for training the model
 
-# gridsearch = GridSearchCV(rnd_reg, param_grid=params, n_jobs=1, verbose=2)
+# gridsearch = GridSearchCV(
+#     rnd_reg,
+#     param_grid=params,
+#     n_jobs=1,
+#     verbose=1)
 # gridsearch.fit(X_train_test, y_train_test)
 # joblib.dump(gridsearch, f"{root_project}/models/gridsearch_departures.pkl")
 
@@ -158,9 +164,9 @@ X_train, X_test, y_train, y_test = train_test_split(
 #     rnd_reg,
 #     random_grid,
 #     random_state=42,
-#     n_iter=500,
+#     n_iter=100,
 #     n_jobs=-1,
-#     verbose=2)
+#     verbose=1)
 # randomsearch.fit(X_train_test, y_train_test)
 # joblib.dump(randomsearch, f"{root_project}/models/randomsearch_arrivals.pkl")
 

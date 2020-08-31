@@ -27,13 +27,16 @@ df_countries = pd.read_pickle(
 # In uniform distribution if max value desired is X, scale=X-loc
 # In randint distribution if max value desired is X, high=X+low
 R0 = uniform(loc=2, scale=18) 
-Tr = uniform(loc=2, scale=18)
+Tr = uniform(loc=2, scale=28)
 # omega = expon(loc=0.01, scale=0.1)
-omega = truncexpon(b=1) # Exponential truncated to maximum value b
-limit_deceased = randint(low=1, high=1001)
+omega = truncexpon(loc=0.01, b=1-0.01) # Exponential truncated to maximum value b
+# limit_deceased = randint(low=1, high=1001)
 n_closed = randint(low=0, high=20)
+# n_closed= [0]
 react_time = randint(low=1, high=31)
 countries = list(df_countries['country_code'].values) # All countries in df
+
+
 
 
 # # Alternative paramater space to explore based on model errors
@@ -46,10 +49,12 @@ countries = list(df_countries['country_code'].values) # All countries in df
 # countries = list(df_countries['country_code'].values) # All countries in df
 # # countries = ['ESP', 'FRA', 'ITA'] # Specify desired countries
 
+
+
 param_grid = {'R0' : R0,
               'Tr' : Tr,
               'omega' : omega,
-              'limit_deceased' : limit_deceased,
+              # 'limit_deceased' : limit_deceased,
               'n_closed' : n_closed,
               'react_time' : react_time,
               'countries' : countries }
@@ -70,7 +75,7 @@ dict_keys = [
     'mort_pow_1',
     'mort_pow_2',
     'mort_pow_3',
-    'limit_deceased',
+    # 'limit_deceased',
     'n_closed',
     'react_time',
     'total_infected',
@@ -78,7 +83,7 @@ dict_keys = [
     'total_recovered']
 
 
-file_name = 'simulation_results_rev14_wide.csv'
+file_name = 'simulation_results_rev17_wide.csv'
 
 # If the file not exist, write the header first
 if not os.path.isfile(f"{root_project}/data/processed/{file_name}"):
@@ -93,7 +98,7 @@ for simulation in tqdm(param_list):
         simulation['Tr'],
         simulation['omega'],
         simulation['countries'],
-        simulation['limit_deceased'],
+        # simulation['limit_deceased'],
         simulation['n_closed'],
         simulation['react_time'])
     sir_model.simulate()

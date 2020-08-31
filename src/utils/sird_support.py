@@ -1,5 +1,5 @@
 # =============================================================================
-# Functions to use in some computations of the sir model 
+# Functions to use in some computations of the SIRD model 
 # =============================================================================
 
 import numpy as np
@@ -54,7 +54,7 @@ def countries_reaction(t, react_time, top_countries):
 
     country_react = {}
     for country in top_countries:
-        country_react[country] = np.random.exponential(
+        country_react[country] = np.random.exponential(scale=2,
             size=1).astype('int') + react_time + t
 
     flag = 0
@@ -115,14 +115,28 @@ def first_deceased(new_deceased_world_t, period=14):
 
     return day_1, day_2
 
-def infection_power(new_infected_world_t, SIR_world_t, day_1, day_2):
+def check_division(n, d):
+    """
+    Returns 0 if denominator is 0
+    """
+
+    return n / d if d else 0
+
+def check_array_div(n, d):
+    """
+    Returns 0 if denominator is 0, array mode.
+    """
+    
+    return np.divide(n, d, out=np.zeros_like(n), where=d!=0)
+
+def infection_power(new_infected_world_t, SIRD_world_t, day_1, day_2):
     """
     Computes some parameters related with the infecting power of the disease.
 
     Parameters
     ----------
     new_infected_world_t : np.array
-    SIR_world_t : np.array
+    SIRD_world_t : np.array
     day_1 : float
     day_2 : float
 
@@ -133,17 +147,21 @@ def infection_power(new_infected_world_t, SIR_world_t, day_1, day_2):
     gradient : np.array
 
     """
-
-    slope_1 = new_infected_world_t[day_1:day_2].sum() / (day_2 - day_1)
-
-    slope_2 = (SIR_world_t[1, day_2] -
-               SIR_world_t[1, day_1]) / SIR_world_t[1, day_1]
-
-    gradient = np.gradient(SIR_world_t[1, day_1:day_2])
+    if day_2 == 0:
+        slope_1, slope_2, gradient = 0, 0, 0
+    else:
+        slope_1 = new_infected_world_t[day_1:day_2].sum() / (day_2 - day_1)
+    
+        slope_2 = check_division((SIRD_world_t[1, day_2] -
+                   SIRD_world_t[1, day_1]),  SIRD_world_t[1, day_1])
+        # slope_2 = (SIRD_world_t[1, day_2] -
+        #            SIRD_world_t[1, day_1]) / SIRD_world_t[1, day_1]
+    
+        gradient = np.gradient(SIRD_world_t[1, day_1:day_2])
 
     return slope_1, slope_2, gradient
 
-def mortality_power(new_deceased_world_t, new_infected_world_t, SIR_world_t,
+def mortality_power(new_deceased_world_t, new_infected_world_t, SIRD_world_t,
                     day_1, day_2):
     """
     Computes some parameters related with the mortality power of the disease.
@@ -152,7 +170,7 @@ def mortality_power(new_deceased_world_t, new_infected_world_t, SIR_world_t,
     ----------
     new_deceased_world_t : np.array
     new_infected_world_t : np.array
-    SIR_world_t : np.array
+    SIRD_world_t : np.array
     day_1 : float
     day_2 : float
 
@@ -164,16 +182,27 @@ def mortality_power(new_deceased_world_t, new_infected_world_t, SIR_world_t,
     gradient : np.array
 
     """
-
-    ratio_1 = new_deceased_world_t[:day_2].sum(
-    ) / (new_infected_world_t[day_1:day_2].sum())
-
-    ratio_2 = (new_deceased_world_t[day_1:day_2].sum() /
-               (SIR_world_t[1, day_2] - SIR_world_t[1, day_1]))
-
-    ratio_3 = (new_deceased_world_t[day_1:day_2].sum() /
-               (SIR_world_t[2, day_2] - SIR_world_t[2, day_1]))
-
-    gradient = np.gradient(new_deceased_world_t[day_1:day_2])
+    if day_2 == 0:
+        ratio_1, ratio_2, ratio_3, gradient = 0, 0, 0, 0
+    else:
+        ratio_1 = check_division(new_deceased_world_t[:day_2].sum(),
+                                new_infected_world_t[day_1:day_2].sum())
+        
+        ratio_2 = check_division(new_deceased_world_t[day_1:day_2].sum(),
+                                 SIRD_world_t[1, day_2] - SIRD_world_t[1, day_1])
+        
+        ratio_3 = check_division(new_deceased_world_t[day_1:day_2].sum(),
+                                 SIRD_world_t[2, day_2] - SIRD_world_t[2, day_1])
+    
+        # ratio_1 = new_deceased_world_t[:day_2].sum(
+        # ) / (new_infected_world_t[day_1:day_2].sum())
+    
+        # ratio_2 = (new_deceased_world_t[day_1:day_2].sum() /
+        #            (SIRD_world_t[1, day_2] - SIRD_world_t[1, day_1]))
+    
+        # ratio_3 = (new_deceased_world_t[day_1:day_2].sum() /
+        #            (SIRD_world_t[2, day_2] - SIRD_world_t[2, day_1]))
+    
+        gradient = np.gradient(new_deceased_world_t[day_1:day_2])
 
     return ratio_1, ratio_2, ratio_3, gradient

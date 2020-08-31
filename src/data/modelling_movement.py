@@ -33,10 +33,14 @@ l_people = []
 df_people = df.copy()
 
 for country in df.iterrows():
+    # Possibles destinations of country
     country_destinations = country[1]['destinations']
+    # Compute probabilities of going to each of destinations
     prob = {x: countrycode_to_proparriv[x] for x in country_destinations}
     sum_prob = np.sum(list(prob.values()))
+    # Probabilities of going to each of destinations normalized. sum=1
     prob = {k: v / sum_prob for k, v in prob.items()}
+    # Compute individuals going from country to destinations
     people = {k: int(round(
         v * countrycode_to_departures[country[1]['country_code']], 0))
         for k, v in prob.items()}
@@ -57,5 +61,5 @@ for index, country in df.iterrows():
 OD_matrix = nx.attr_matrix(H, edge_attr='people', rc_order=df['country_code'])
 
 
-df.to_pickle(f"{root_project}/data/interim/country_info_final.pickle")
-np.save(f"{root_project}/data/interim/od_matrix.npy", OD_matrix)
+# df.to_pickle(f"{root_project}/data/interim/country_info_final.pickle")
+# np.save(f"{root_project}/data/interim/od_matrix.npy", OD_matrix)

@@ -95,16 +95,17 @@ def features_pop(df):
 
 
 if __name__ == '__main__':
-    df_1 = pd.read_csv(f'{root_project}/data/processed/simulation_results.csv')
-    df_2 = pd.read_csv(f'{root_project}/data/processed/simulation_results_v2.csv')
-    df_3 = pd.read_csv(f'{root_project}/data/processed/simulation_results_v3.csv')
-    df_4 = pd.read_csv(f'{root_project}/data/processed/simulation_results_v4_errors.csv')
-    df = pd.concat([df_1, df_2, df_3, df_4], ignore_index=True)
+    # df_1 = pd.read_csv(f'{root_project}/data/processed/simulation_results.csv')
+    # df_2 = pd.read_csv(f'{root_project}/data/processed/simulation_results_v2.csv')
+    # df_3 = pd.read_csv(f'{root_project}/data/processed/simulation_results_v3.csv')
+    # df_4 = pd.read_csv(f'{root_project}/data/processed/simulation_results_v4_errors.csv')
+    # df = pd.concat([df_1, df_2, df_3, df_4], ignore_index=True)
+    df = pd.read_csv(f'{root_project}/data/processed/simulation_results_rev15_wide.csv')
     # add new features to the sir simulation results
     df = features_graph(df)
     df = features_pop(df)
 
-    df.to_pickle(f"{root_project}/data/processed/features_model_rev5.pickle")
+    df.to_pickle(f"{root_project}/data/processed/features_model_rev15.pickle")
 
 
 
