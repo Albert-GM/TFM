@@ -26,14 +26,14 @@ df_countries = pd.read_pickle(
 # Paramater space to explore
 # In uniform distribution if max value desired is X, scale=X-loc
 # In randint distribution if max value desired is X, high=X+low
-R0 = uniform(loc=2, scale=18) 
-Tr = uniform(loc=2, scale=28)
+R0 = uniform(loc=10, scale=25-10) 
+Tr = uniform(loc=10, scale=30-10)
 # omega = expon(loc=0.01, scale=0.1)
-omega = truncexpon(loc=0.01, b=1-0.01) # Exponential truncated to maximum value b
+omega = truncexpon(loc=0.01, b=0.05-0.01) # Exponential truncated to maximum value b
 # limit_deceased = randint(low=1, high=1001)
-n_closed = randint(low=0, high=20)
+n_closed = randint(low=0, high=20+0)
 # n_closed= [0]
-react_time = randint(low=1, high=31)
+react_time = randint(low=1, high=30+1)
 countries = list(df_countries['country_code'].values) # All countries in df
 
 
@@ -60,7 +60,7 @@ param_grid = {'R0' : R0,
               'countries' : countries }
 
 
-n_simulations = 50000 # specify the number of simulations to make
+n_simulations = 100000 # specify the number of simulations to make
 param_list = list(ParameterSampler(param_grid, n_iter=n_simulations))
 
 # Features to keep
@@ -83,7 +83,7 @@ dict_keys = [
     'total_recovered']
 
 
-file_name = 'simulation_results_rev17_wide.csv'
+file_name = 'simulation_results_rev17_wide_errors.csv'
 
 # If the file not exist, write the header first
 if not os.path.isfile(f"{root_project}/data/processed/{file_name}"):

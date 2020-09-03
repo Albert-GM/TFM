@@ -16,7 +16,7 @@ from sklearn.model_selection import ParameterSampler
 
 class SIRD_model:
     """
-    Simulates the spread of a contagious disease around the world.
+    Simulates the spread of a infectious disease around the world.
     The main model is based on the SIR model, but adds other characteristics to
     make it more representative of how countries behave facing a global epidemic.
     The model simplifies the movement of people between countries to the movement
@@ -164,6 +164,7 @@ class SIRD_model:
                 
             if not flag_react:
                 self.OD_sim = closing_country(country_react, self.OD_sim, t)
+                # print("Closing airports....")
         # If flag=1 there are not deceased
         if flag_deaths:
             day_a, day_b = 0, 0

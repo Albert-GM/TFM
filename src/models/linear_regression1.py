@@ -32,7 +32,7 @@ PATH =  f"{root_project}/models/linear_regression_rev17.pkl"
 
 # Read data
 df = pd.read_csv(
-    f'{root_project}/data/processed/simulation_results_rev17_wide.csv')
+    f'{root_project}/data/processed/simulation_results_rev17_wide_static.csv')
 # Load features
 df = features_graph(df)
 df = features_pop(df)

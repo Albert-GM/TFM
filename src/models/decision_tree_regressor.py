@@ -19,26 +19,26 @@ import pandas as pd
 from scipy.stats import randint
 from yellowbrick.model_selection import LearningCurve, FeatureImportances
 from yellowbrick.regressor import ResidualsPlot
-from sklearn.metrics import r2_score
 import joblib
-import numpy as np
 from matplotlib import pyplot as plt
 import seaborn as sns
 sns.set()
+import time
 
-PATH =  f"{root_project}/models/decision_tree_rev17.pkl"
 
 
+# Read data
 df = pd.read_csv(
     f'{root_project}/data/processed/simulation_results_rev17_wide.csv')
+# Load features
 df = features_graph(df)
 df = features_pop(df)
 
+# keep track of the original dataset
+df_model = df.copy()
 
-
-# df['total_deceased'] = np.log(df['total_deceased'].replace(0,np.nan))
-# df['total_deceased'].fillna(0, inplace=True)
-
+# size_data = 10000 # enter  desired subset of data
+# df_model = df_model.sample(size_data)
 
 features = [
     'Tr',
@@ -57,15 +57,22 @@ features = [
 
 
 
-df = df[features]
+df_model = df_model[features]
 
-X_train_val, y_train_val, X_test, y_test = make_train_val_test(df, out_mode=1)
+samples = df_model.shape[0]
+features = df_model.shape[1]
+run_time = time.strftime("run_%d_%m_%Y-%H_%M_%S")
+MODEL_NAME = 'decision_tree_rev17'
+# Path to save the model
+PATH = f"{root_project}/models/{MODEL_NAME}-{samples}-samples-{features}-feat-{run_time}.pkl"
+
+X_train_val, y_train_val, X_test, y_test = make_train_val_test(df_model, out_mode=1)
 
 
 
 param_dist = dict(
     max_depth=randint(low=8, high=18),
-    min_samples_leaf=randint(2, 20),
+    min_samples_leaf=randint(10, 30),
 )
 
 random_search = RandomizedSearchCV(DecisionTreeRegressor(random_state=42),
@@ -87,7 +94,7 @@ results_searchcv(random_search, X_test, y_test)
 
 
 fig, ax = plt.subplots(1, 1, figsize = (10,5))
-visualizer = LearningCurve(random_search.best_estimator_, scoring='r2')
+visualizer = LearningCurve(random_search.best_estimator_)
 visualizer.fit(X_train_val, y_train_val)        # Fit the data to the visualizer
 visualizer.show()           # Finalize and render the figure
 
@@ -105,6 +112,3 @@ viz.show()
 
 
 plot_predictions(random_search, X_test, y_test)
-
-
-# errors_distribution(random_search, X_test, y_test, X_train_val)

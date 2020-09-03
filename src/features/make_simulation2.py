@@ -83,7 +83,7 @@ dict_keys = [
     'total_recovered']
 
 
-file_name = 'simulation_results_rev17_wide.csv'
+file_name = 'simulation_results_rev17_wide_v2.csv'
 
 # If the file not exist, write the header first
 if not os.path.isfile(f"{root_project}/data/processed/{file_name}"):

@@ -13,6 +13,9 @@ from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from sklearn.model_selection import train_test_split
 import os
 import re
+from sklearn.pipeline import Pipeline
+from yellowbrick.model_selection import LearningCurve, FeatureImportances
+from yellowbrick.regressor import ResidualsPlot
 root_project = re.findall(r'(^\S*TFM-master)', os.getcwd())[0]
 
 
@@ -107,16 +110,17 @@ def last_values(df):
     return df2[['Country Name', 'Country Code', 'last_value']]
 
 
-def results_searchcv(estimator, X_test=None, y_test=None):
+def results_searchcv(cv_estimator, estimator, X_test=None, y_test=None):
     """
-    Prints out useful information about a trained GridsearchCV object or a
-    RandomizedSearchCV object from the sklearn library. Given a pair X_test,
-    y_test prints out the score and the mean absolute error from the estimator.
+    Prints out useful information about a cross-validated estimator. Given X_test,
+    and y_test, provides performance in data not seen by the estimator.
 
     Parameters
     ----------
-    predictor : sklearn.model_selection._search.GridSearchCV
-        A trained predictor.
+    cv_estimator : RandomizedSearchCV or GridSeachCV
+        A trained cross-validated estimator.
+    estimator: sklearn estimator
+        A trained estimator, but not in X_test, y_test
     X_test : pandas.DataFrame or array
     y_test : pandas.DataFrame, pandas.Series or array
 
@@ -125,19 +129,29 @@ def results_searchcv(estimator, X_test=None, y_test=None):
     None.
 
     """
-    print("="*20)
-    print(f"Cross-val best score:\n{estimator.best_score_}")
-    print(f"Cross-val std:\n{estimator.cv_results_['std_test_score'][estimator.best_index_]}")
-    print(f"Best parameters found:\n{estimator.best_params_}")
+    print("=" * 20)
+    print(f"Cross-val best score:\n{cv_estimator.best_score_}")
+    print(
+        f"Cross-val std:\n{cv_estimator.cv_results_['std_test_score'][cv_estimator.best_index_]}")
+    print(f"Best parameters found:\n{cv_estimator.best_params_}")
     if X_test is not None and y_test is not None:
-        print(f"Score in test:\n{estimator.score(X_test, y_test)}")
         y_predicted = estimator.predict(X_test)
-        print(f"R^2 in test\n{r2_score(y_test, y_predicted)}")
+        print(f"R-squared in test\n{r2_score(y_test, y_predicted)}")
+        print(
+            f"RMSE in test:\n{mean_squared_error(y_test, y_predicted, squared=False)}")
         print(f"MAE in test:\n{mean_absolute_error(y_test, y_predicted)}")
-    print("="*20)
+    print("=" * 20)
+    return None
 
 
+def results_estimator(estimator, X_test, y_test):
 
+    y_predicted = estimator.predict(X_test)
+    print(f"R-squared in test\n{r2_score(y_test, y_predicted)}")
+    print(
+        f"RMSE in test:\n{mean_squared_error(y_test, y_predicted, squared=False)}")
+    print(f"MAE in test:\n{mean_absolute_error(y_test, y_predicted)}")
+    return None
 
 
 def top_k_connected(df, k):
@@ -171,7 +185,7 @@ def top_k_connected(df, k):
         'country_code'].iloc[:k].tolist()
 
 
-def make_train_val_test(df, test_val_prop=0.2, out_mode=0):
+def make_train_val_test(df, test_val_prop=0.2, out_mode=0, shuffle=True):
     """
     Makes a train, validation and test sets according to the desired proportion
     for the test and validation sets. Validation set and test set are the same
@@ -197,36 +211,35 @@ def make_train_val_test(df, test_val_prop=0.2, out_mode=0):
 
     """
 
-    df = df.iloc[::-1] # new simulation data at the beggining of df
     X = df.drop('total_deceased', axis=1)
     y = df['total_deceased']
 
     train_val_size = int(df.shape[0] * test_val_prop)
 
     X_train_val, X_test, y_train_val, y_test = train_test_split(
-        X, y, test_size=train_val_size, random_state=42, shuffle=False)
+        X, y, test_size=train_val_size, random_state=42, shuffle=shuffle)
     X_train, X_val, y_train, y_val = train_test_split(
         X_train_val, y_train_val, test_size=train_val_size, random_state=42,
-        shuffle=False)
-    
-    print("="*20)
-    if out_mode==0:
+        shuffle=shuffle)
+
+    print("=" * 20)
+    if out_mode == 0:
         print(f"Train set: {X_train.shape}")
         print(f"Validation set: {X_val.shape}")
         print(f"Test set: {X_test.shape}")
-        print("="*20)
+        print("=" * 20)
         return X_train, X_val, X_test, y_train, y_val, y_test
-    elif out_mode==1:
+    elif out_mode == 1:
         print(f"Train_validation set: {X_train_val.shape}")
         print(f"Test set: {X_test.shape}")
-        print("="*20)
+        print("=" * 20)
         return X_train_val, y_train_val, X_test, y_test
     else:
         raise ValueError('Incorrect out_mode value.')
 
 
-def errors_distribution(estimator, X_test, y_test, X_train, n=200,
-                        X_test_scaled=None):
+def errors_distribution(estimator, X_val, y_val, df, n=200,
+                        figsize=(20, 20)):
     """
     Prints out some plots to compare the distribution of the features in the
     train set against the distribuition of the features in the n samples with
@@ -246,56 +259,192 @@ def errors_distribution(estimator, X_test, y_test, X_train, n=200,
         Number of samples to consider in the errors set top. The default is 200.
     X_test_scaled : bool, optional
         If passed the estimator predicts with scaled data.
-        
+
 
     Returns
     -------
     None.
 
     """
-    
-    X_err = X_test.copy()
-    if X_test_scaled is None:
-        X_err['predicted'] = estimator.predict(X_test)
-    else:
-        X_err['predicted'] = estimator.predict(X_test_scaled)
-          
-    X_err['real'] = y_test
+
+    X_err = X_val.copy()
+
+    X_err['predicted'] = estimator.predict(X_val)
+
+    X_err['real'] = y_val
     X_err['error'] = X_err['real'] - X_err['predicted']
     X_err['abs_error'] = np.abs(X_err['error'])
     X_err_sorted = X_err.sort_values(by='abs_error', ascending=False).iloc[:n]
+    error_idx = X_err_sorted.index
 
-    for column in X_train.columns:
-      fig, ax = plt.subplots(1, 1, figsize = (15,8))
-      sns.distplot(X_train[column], hist=True, color='skyblue',
-                   label='Original', ax=ax)
-      sns.distplot(X_err_sorted[column], hist=True, color='red',
-                   label='Errors', ax=ax)
-      ax.set(title=column)
-      plt.legend()
-      plt.show()
-      
+    number_subplots = len(df.describe().columns)
+    width = 4
+    high = int(number_subplots / 4)
+    if number_subplots % 4 != 0:
+        high = int(high + 1)
+
+    fig, ax = plt.subplots(high, width, figsize=figsize)
+
+    ax = ax.ravel()
+
+    for i, feature in enumerate(df.describe().columns):
+        sns.distplot(df[feature], hist=True, color='skyblue',
+                     label='Original', ax=ax[i])
+        sns.distplot(df.loc[error_idx, feature], hist=True, color='red',
+                     label='Errors', ax=ax[i])
+
+
     return None
 
 
+def plot_predictions(estimator, X_test, y_test, samples=20):
 
-def plot_predictions(estimator, X_test, y_test, samples=50):
-    
-    
     y_predicted = estimator.predict(X_test)
     df_predicted = pd.DataFrame({'Actual': y_test, 'Predicted': y_predicted})
-    df_predicted.sample(samples).plot(kind='barh',figsize=(15,50))
+    df_predicted.sample(samples).plot(kind='barh', figsize=(15, 50))
     plt.show()
+
+    return None
+
+
+def plot_visualizations(PATH,
+                        estimator,
+                        X_train,
+                        y_train,
+                        X_val,
+                        y_val,
+                        figsize=(20, 10),
+                        learningcurve=True,
+                        featureimportance=True,
+                        residualsplot=True):
     
+    if isinstance(estimator, Pipeline):
+        estimator = estimator['estimator']
+    if learningcurve:
+        fig, ax = plt.subplots(1, 1, figsize=figsize)
+        visualizer = LearningCurve(estimator, n_jobs=6)
+        # Fit the data to the visualizer
+        visualizer.fit(X_train, y_train)
+        visualizer.show()           # Finalize and render the figure
+        plt.savefig(
+            f"{PATH}/learning_curve.png")
+
+    if featureimportance:
+        fig, ax = plt.subplots(1, 1, figsize=figsize)
+        viz = FeatureImportances(estimator)
+        viz.fit(X_train, y_train)
+        viz.show()
+        plt.savefig(
+            f"{PATH}/feature_importance.png")
+
+    if residualsplot:
+        fig, ax = plt.subplots(1, 1, figsize=figsize)
+        viz = ResidualsPlot(estimator)
+        viz.fit(X_train, y_train)
+        viz.score(X_val, y_val)
+        viz.show()
+        plt.savefig(
+            f"{PATH}/residuals.png")
+
     return None
 
 
 
 
+def take_samples(df_v1, df_v2, n_samples, ratio_errors=0.2):
+    
+    if df_v1.shape[1] != df_v2.shape[1]:
+        raise ValueError("Data have different number of features.")
+    
+    l1 = df_v1.shape[0]
+    l2 = df_v2.shape[0]
+    total_l = l1 + l2
+    
+    error_samples = int(n_samples * ratio_errors)  
+    normal_samples = int(n_samples - error_samples)    
 
+    if error_samples > l2:
+        raise ValueError("Not enough sample from errors distributions.")
+    if normal_samples > l1:
+        raise ValueError("Not enough sample from original distribution.")   
+    else:
+        df = pd.concat([df_v1.sample(normal_samples, random_state=42),
+                        df_v2.sample(error_samples, random_state=42)],
+                       ignore_index=True).sample(frac=1).reset_index(drop=True)
+    return df
+    
+    
 
+    
 
+def get_model_data(n_samples=None, ratio=None):
+    """
+    Provides train and validation data to train the model. If n_samples and
+    ratio are not None, it returns data according to the ratio between v1 and v2.
+    V1 is data comming from the original distribution of SIRD parameters, and
+    V2 is data comming from distributions based on errors of trained ML models.
 
+    Parameters
+    ----------
+    n_samples : int, optional
+        Subset of samples from the original set. The default is None.
+    ratio : float, optional
+        Ratio of the data from distribudion based on errors. The default is None.
 
+    Returns
+    -------
+    df_train_val : pandas.DataFrame
 
-
+    """
+    
+    df_train_val = pd.read_pickle(
+        f"{root_project}/data/processed/train_val_set.pickle")
+    df_v1_train_val = pd.read_pickle(
+        f"{root_project}/data/processed/train_val_set_v1.pickle")
+    df_v2_train_val = pd.read_pickle(
+        f"{root_project}/data/processed/train_val_set_v2.pickle")
+    
+    if n_samples != None and ratio != None:
+        df_train_val = take_samples(df_v1_train_val,
+                                    df_v2_train_val,
+                                    n_samples,
+                                    ratio)
+        return df_train_val
+    elif n_samples != None:  
+        df_train_val = df_train_val.sample(n_samples, random_state=42)
+        return df_train_val
+    else:
+        return df_train_val
+        
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
