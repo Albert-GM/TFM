@@ -12,37 +12,26 @@ sys.path.append(root_project)
 
 from scipy.stats import  loguniform
 import pandas as pd
-from sklearn.model_selection import  RandomizedSearchCV
+from sklearn.model_selection import  RandomizedSearchCV, train_test_split
 from sklearn.preprocessing import StandardScaler
 from sklearn.svm import SVR
-from src.features.add_features import features_graph, features_pop
-from src.utils.help_func import results_searchcv, make_train_val_test,\
-                                errors_distribution, plot_predictions
+from src.utils.help_func import results_searchcv,plot_predictions,\
+    errors_distribution, plot_visualizations, get_model_data
 from sklearn.pipeline import Pipeline
+from sklearn.impute import SimpleImputer
 from yellowbrick.regressor import ResidualsPlot
 from yellowbrick.model_selection import LearningCurve
 import joblib
 from matplotlib import pyplot as plt
 import seaborn as sns
 sns.set()
-
-PATH =  f"{root_project}/models/svr_rev17.pkl"
-
-
-# Read data
-df = pd.read_csv(
-    f'{root_project}/data/processed/simulation_results_rev17_wide_static.csv')
-# Load features
-df = features_graph(df)
-df = features_pop(df)
-
-# keep track of the original dataset
-df_model = df.copy()
-
-size_data = 10000 # enter  desired subset of data
-df_model = df_model.sample(size_data)
+import time
 
 
+# Get the data
+df_train_val = get_model_data(10000)
+
+# Feature selection
 features = [
     'Tr',
     'inf_pow_1',
@@ -56,56 +45,82 @@ features = [
     'betweenness',
     'degree',
     'closeness',
-    'country_pop']
+    'country_pop',
+    'country_departures',
+    'exposed_pop',
+    'inf_pow_1_log',
+    'inf_pow_2_log',
+    'mort_pow_1_log',
+    'mort_pow_2_log',
+    'mort_pow_3_log',
+    ]
 
 
-df_model = df_model[features]
+df_train_val = df_train_val[features]
 
-X_train_val, y_train_val, X_test, y_test = make_train_val_test(df_model,
-                                                               out_mode=1)
+print("=" * 20)
+print(f"Train_validation size: {df_train_val.shape}")
+print("=" * 20)
 
+
+X_train_val = df_train_val.drop('total_deceased', axis=1)
+y_train_val = df_train_val['total_deceased']
+X_train, X_val, y_train, y_val = train_test_split(X_train_val,
+                                                  y_train_val,
+                                                  random_state=42)
+
+# Path naming
+samples = df_train_val.shape[0]
+features = df_train_val.shape[1]
+run_time = time.strftime("run_%d_%m_%Y-%H_%M_%S")
+MODEL_NAME = 'support_vector_regessor'
+# Path to save the model
+PATH = f"{root_project}/models/{MODEL_NAME}-{samples}-samples-{features}-feat-{run_time}"
+LOAD_PATH = f"{root_project}/models/{MODEL_NAME}.pkl"
+if not os.path.exists(PATH):
+    os.makedirs(PATH)
+    
 
 pipe = Pipeline([
+    ('imputer', SimpleImputer()),
     ('preprocess', StandardScaler()),
     ('estimator', SVR())
 ])
 
 param_dist = dict(
+    imputer__strategy=['median', 'mean'],
     estimator__kernel = ['rbf'],
     estimator__C= loguniform(10, 2000),
     estimator__gamma= loguniform(1e-8, 1e-1)
 )
 
+scoring = {'R2': 'r2', 'RMSE': 'neg_root_mean_squared_error',
+           'MAE': 'neg_mean_absolute_error'}
 
 random_search = RandomizedSearchCV(pipe, param_distributions=param_dist,
-                                   verbose=1, n_iter=20, cv=3, 
+                                   scoring=scoring,
+                                   refit='R2',                                                   
+                                   verbose=1, n_iter=50, cv=3,
                                    random_state=42, n_jobs=-1)
 
 
-random_search.fit(X_train_val, y_train_val)
-joblib.dump(random_search, PATH)
+# random_search.fit(X_train_val, y_train_val)
+# joblib.dump(random_search, f"{PATH}/{MODEL_NAME}.pkl")
 
-# Load the model in path
-random_search = joblib.load(PATH)
+# Load a model
+random_search = joblib.load(LOAD_PATH)
 
-# Prints out useful information about the model
-results_searchcv(random_search, X_test, y_test)
+# Train the pipe with only train data and best parameters of random search
+pipe.set_params(**random_search.best_params_)
+pipe.fit(X_train, y_train)
 
-# Plot learning curves
-fig, ax = plt.subplots(1, 1, figsize = (10,5))
-visualizer = LearningCurve(random_search.best_estimator_)
-visualizer.fit(X_train_val, y_train_val)        # Fit the data to the visualizer
-visualizer.show()           # Finalize and render the figure
+results_searchcv(random_search, pipe, X_val, y_val)
 
+plot_visualizations(PATH, pipe, X_train_val,
+                    y_train_val, X_val, y_val, featureimportance=False )
 
+plot_predictions(pipe, X_val, y_val, samples=50)
 
-# Plot residual plots
-fig, ax = plt.subplots(1, 1, figsize = (10,5))
-viz = ResidualsPlot(random_search.best_estimator_)
-viz.fit(X_train_val, y_train_val)
-viz.score(X_test, y_test)
-viz.show()
+errors_distribution(pipe, X_val, y_val, df_train_val, n=100)
 
-
-plot_predictions(random_search, X_test, y_test)
 

@@ -132,7 +132,10 @@ def results_searchcv(cv_estimator, estimator, X_test=None, y_test=None):
     print("=" * 20)
     print(f"Cross-val best score:\n{cv_estimator.best_score_}")
     print(
-        f"Cross-val std:\n{cv_estimator.cv_results_['std_test_score'][cv_estimator.best_index_]}")
+        f"Cross-val std:\n{cv_estimator.cv_results_['std_test_R2'][cv_estimator.best_index_]}")   
+    print(f"Cross-val RMSE:\n{-cv_estimator.cv_results_['mean_test_RMSE'][cv_estimator.best_index_]}")
+    print(f"Cross-val MAE:\n{-cv_estimator.cv_results_['mean_test_MAE'][cv_estimator.best_index_]}")
+
     print(f"Best parameters found:\n{cv_estimator.best_params_}")
     if X_test is not None and y_test is not None:
         y_predicted = estimator.predict(X_test)
@@ -147,7 +150,7 @@ def results_searchcv(cv_estimator, estimator, X_test=None, y_test=None):
 def results_estimator(estimator, X_test, y_test):
 
     y_predicted = estimator.predict(X_test)
-    print(f"R-squared in test\n{r2_score(y_test, y_predicted)}")
+    print(f"R2 in test\n{r2_score(y_test, y_predicted)}")
     print(
         f"RMSE in test:\n{mean_squared_error(y_test, y_predicted, squared=False)}")
     print(f"MAE in test:\n{mean_absolute_error(y_test, y_predicted)}")
@@ -301,7 +304,7 @@ def plot_predictions(estimator, X_test, y_test, samples=20):
 
     y_predicted = estimator.predict(X_test)
     df_predicted = pd.DataFrame({'Actual': y_test, 'Predicted': y_predicted})
-    df_predicted.sample(samples).plot(kind='barh', figsize=(15, 50))
+    df_predicted.sample(samples).plot(kind='barh', figsize=(10, 20))
     plt.show()
 
     return None
@@ -313,13 +316,13 @@ def plot_visualizations(PATH,
                         y_train,
                         X_val,
                         y_val,
-                        figsize=(20, 10),
+                        figsize=(12, 8),
                         learningcurve=True,
                         featureimportance=True,
                         residualsplot=True):
     
-    if isinstance(estimator, Pipeline):
-        estimator = estimator['estimator']
+    # if isinstance(estimator, Pipeline):
+    #     estimator = estimator['estimator']
     if learningcurve:
         fig, ax = plt.subplots(1, 1, figsize=figsize)
         visualizer = LearningCurve(estimator, n_jobs=6)
@@ -328,15 +331,7 @@ def plot_visualizations(PATH,
         visualizer.show()           # Finalize and render the figure
         plt.savefig(
             f"{PATH}/learning_curve.png")
-
-    if featureimportance:
-        fig, ax = plt.subplots(1, 1, figsize=figsize)
-        viz = FeatureImportances(estimator)
-        viz.fit(X_train, y_train)
-        viz.show()
-        plt.savefig(
-            f"{PATH}/feature_importance.png")
-
+        
     if residualsplot:
         fig, ax = plt.subplots(1, 1, figsize=figsize)
         viz = ResidualsPlot(estimator)
@@ -345,6 +340,18 @@ def plot_visualizations(PATH,
         viz.show()
         plt.savefig(
             f"{PATH}/residuals.png")
+
+    if featureimportance:
+        if isinstance(estimator, Pipeline):
+            estimator = estimator['estimator']
+        fig, ax = plt.subplots(1, 1, figsize=figsize)
+        viz = FeatureImportances(estimator)
+        viz.fit(X_train, y_train)
+        viz.show()
+        plt.savefig(
+            f"{PATH}/feature_importance.png")
+
+
 
     return None
 
@@ -370,7 +377,8 @@ def take_samples(df_v1, df_v2, n_samples, ratio_errors=0.2):
     else:
         df = pd.concat([df_v1.sample(normal_samples, random_state=42),
                         df_v2.sample(error_samples, random_state=42)],
-                       ignore_index=True).sample(frac=1).reset_index(drop=True)
+                       ignore_index=True).sample(
+                           frac=1,random_state=42).reset_index(drop=True)
     return df
     
     
