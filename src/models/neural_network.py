@@ -2,7 +2,7 @@
 import sys
 import os
 import re
-root_project = re.findall(r'(^\S*TFM-master)', os.getcwd())[0]
+root_project = re.findall(r'(^\S*TFM)', os.getcwd())[0]
 sys.path.append(root_project)
 
 

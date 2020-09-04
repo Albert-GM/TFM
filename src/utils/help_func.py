@@ -16,7 +16,7 @@ import re
 from sklearn.pipeline import Pipeline
 from yellowbrick.model_selection import LearningCurve, FeatureImportances
 from yellowbrick.regressor import ResidualsPlot
-root_project = re.findall(r'(^\S*TFM-master)', os.getcwd())[0]
+root_project = re.findall(r'(^\S*TFM)', os.getcwd())[0]
 # Uncomment following line when estimator is a keras sequential model
 # from tensorflow.keras.models import Sequential
 

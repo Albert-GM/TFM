@@ -11,7 +11,7 @@ import os
 import re
 import numpy as np
 
-root_project = re.findall(r'(^\S*TFM-master)', os.getcwd())[0]
+root_project = re.findall(r'(^\S*TFM)', os.getcwd())[0]
 
 
 def get_data():

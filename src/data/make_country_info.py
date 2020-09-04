@@ -5,7 +5,7 @@
 
 # Add project directory to pythonpath to import own functions
 import sys, os ,re
-root_project = re.findall(r'(^\S*TFM-master)', os.getcwd())[0]
+root_project = re.findall(r'(^\S*TFM)', os.getcwd())[0]
 sys.path.append(root_project)
 
 from src.utils.help_func import extract_indicator, last_values

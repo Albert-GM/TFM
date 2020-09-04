@@ -8,7 +8,7 @@ import json
 import networkx as nx
 import os
 import re
-root_project = re.findall(r'(^\S*TFM-master)', os.getcwd())[0]
+root_project = re.findall(r'(^\S*TFM)', os.getcwd())[0]
 
 # Read necessary data
 df_routes = pd.read_csv(f"{root_project}/data/raw/routes.csv")
