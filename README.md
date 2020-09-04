@@ -3,7 +3,7 @@ PREDICTING THE SCOPE OF A PANDEMIC
 Master's thesis
 ------------
 
-Below you can find the steps to reproduce the results of the work, the project organization and a summary of the thesis.
+Below you can find a summary of the thesis, the steps to reproduce the results of the work and the project organization.
 
 
 Summary
