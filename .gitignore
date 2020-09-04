@@ -90,7 +90,6 @@ target/
 .mypy_cache/
 
 # custom
-/models/
 /notebooks/
 
 # singles files
