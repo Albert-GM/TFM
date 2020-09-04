@@ -1,7 +1,3 @@
-# =============================================================================
-#
-# =============================================================================
-
 # allows to import own functions
 import sys
 import os
@@ -13,7 +9,7 @@ from sklearn.pipeline import Pipeline
 from sklearn.impute import SimpleImputer
 from src.utils.help_func import get_model_data
 from sklearn.feature_selection import RFECV
-import pandas as pd
+# import pandas as pd
 import xgboost as xgb
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.model_selection import RandomizedSearchCV, train_test_split

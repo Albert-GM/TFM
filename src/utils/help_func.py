@@ -16,9 +16,9 @@ import re
 from sklearn.pipeline import Pipeline
 from yellowbrick.model_selection import LearningCurve, FeatureImportances
 from yellowbrick.regressor import ResidualsPlot
-from tensorflow.keras.models import Sequential
 root_project = re.findall(r'(^\S*TFM-master)', os.getcwd())[0]
-
+# Uncomment following line when estimator is a keras sequential model
+# from tensorflow.keras.models import Sequential
 
 def extract_indicator(df, indicator, initial_year=None, final_year=None):
     """
@@ -91,9 +91,7 @@ def last_values(df):
     years = [str(x) for x in years]
 
     last_values = []
-    # flag = False
-    # mejorar este codigo, puedo añadir una flag, para decirme si todos han
-    # sido nan
+
     for country in df.iterrows():
         s = country[1]
         for year in reversed(years):
@@ -106,7 +104,7 @@ def last_values(df):
                 last_values.append(np.nan)
             else:
                 pass
-    df2 = df.copy()  # para no cambiar el df del input
+    df2 = df.copy() 
     df2['last_value'] = last_values
     return df2[['Country Name', 'Country Code', 'last_value']]
 
@@ -270,8 +268,9 @@ def errors_distribution(estimator, X_val, y_val, df, n=200,
 
     X_err = X_val.copy()
     
-    if isinstance(estimator, Sequential):
-        X_err = pd.DataFrame(X_err)
+    # Uncomment following twho lines when estimator is a keras sequential model
+    # if isinstance(estimator, Sequential):
+    #     X_err = pd.DataFrame(X_err)
 
     X_err['predicted'] = estimator.predict(X_val).flatten()
 
