@@ -24,6 +24,10 @@ $ conda env create -f environment.yml
 $ conda activate tfm-agm
 ```
 
+To train the ML models, first, it is necessary to execute add_features.py that produces the dataset from the simulation results.
+
+If you want to train the neural network in the project, it is advisable to create a separate environment with Tensorflow and Keras libraries.
+
 
 Project Organization
 ------------
