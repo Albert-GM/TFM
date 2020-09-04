@@ -26,7 +26,7 @@ from scipy.stats import uniform, expon, randint, truncexpon, loguniform
 import numpy as np
 
 # Get the data
-df_train_val = get_model_data(10000)
+df_train_val = get_model_data(20000)
 
 # Feature selection
 features = [
@@ -108,11 +108,11 @@ random_search = RandomizedSearchCV(pipe,
 
 
 
-# random_search.fit(X_train_val, y_train_val)
-# joblib.dump(random_search, f"{PATH}/{MODEL_NAME}.pkl")
+random_search.fit(X_train_val, y_train_val)
+joblib.dump(random_search, f"{PATH}/{MODEL_NAME}.pkl")
 
 # # Load a model
-random_search = joblib.load(LOAD_PATH)
+# random_search = joblib.load(LOAD_PATH)
 
 # Train the pipe with only train data and best parameters of random search
 pipe.set_params(**random_search.best_params_)
