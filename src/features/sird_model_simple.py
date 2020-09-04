@@ -76,5 +76,5 @@ def SIRD_model_simple(N, I0, Ro, T_r, omega, T):
 
 
 if __name__ == '__main__':
-    
+    # Runs a simulation ant plot the model
     SIRD_model_simple(47000000, 1, 4, 10, 0.02, 360)

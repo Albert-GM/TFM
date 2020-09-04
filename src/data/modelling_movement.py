@@ -60,6 +60,6 @@ for index, country in df.iterrows():
 
 OD_matrix = nx.attr_matrix(H, edge_attr='people', rc_order=df['country_code'])
 
-
+# Uncomment to save new data
 # df.to_pickle(f"{root_project}/data/interim/country_info_final.pickle")
 # np.save(f"{root_project}/data/interim/od_matrix.npy", OD_matrix)

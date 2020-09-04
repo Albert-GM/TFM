@@ -237,18 +237,18 @@ if __name__ == '__main__':
     df_train_val_set.to_pickle(
         f"{root_project}/data/processed/train_val_set.pickle")
     
+    # Uncomment to make .csv files additionally to pickle 
+    # df_test.to_csv(
+    #     f"{root_project}/data/processed/test_set.csv", index=False)
     
-    df_test.to_csv(
-        f"{root_project}/data/processed/test_set.csv", index=False)
+    # df_v1_train_val.to_csv(
+    #     f"{root_project}/data/processed/train_val_set_v1.csv", index=False)
     
-    df_v1_train_val.to_csv(
-        f"{root_project}/data/processed/train_val_set_v1.csv", index=False)
+    # df_v2_train_val.to_csv(
+    #     f"{root_project}/data/processed/train_val_set_v2.csv", index=False)
     
-    df_v2_train_val.to_csv(
-        f"{root_project}/data/processed/train_val_set_v2.csv", index=False)
-    
-    df_train_val_set.to_csv(
-        f"{root_project}/data/processed/train_val_set.csv", index=False)   
+    # df_train_val_set.to_csv(
+    #     f"{root_project}/data/processed/train_val_set.csv", index=False)   
     
     
     

@@ -17,8 +17,11 @@ import pandas as pd
 
 
 # Read necessary data
+
 df_indicators = pd.read_csv(
-    f"{root_project}/data/raw/world_indicators_data.csv")
+    f"{root_project}/data/raw/world_indicators_data.csv.zip")
+
+
 df_pop_plus = pd.read_csv(
     f"{root_project}/data/raw/country_population.csv",
     skiprows=4)

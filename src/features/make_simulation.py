@@ -2,7 +2,7 @@
 # Computes a batch of simulations of the SIR model modificated according
 # to a parameter space. The paramater space intends to be as broad as possible
 # so that it covers all the possible realistic combinations that can occur
-# during an epidemic. 
+# during a pandemic. 
 # =============================================================================
 
 
@@ -17,7 +17,7 @@ from tqdm import tqdm
 from sklearn.model_selection import ParameterSampler
 from scipy.stats import uniform, expon, randint, truncexpon
 
-from src.models.sird_model import SIRD_model
+from src.features.sird_model import SIRD_model
 
 # Read necessary data
 df_countries = pd.read_pickle(
@@ -50,7 +50,7 @@ param_grid = {'R0' : R0,
               'countries' : countries }
 
 
-n_simulations = 50000 # specify the number of simulations to make
+n_simulations = 1 # specify the number of simulations to make
 param_list = list(ParameterSampler(param_grid, n_iter=n_simulations))
 
 # Features to keep
@@ -72,9 +72,9 @@ dict_keys = [
     'total_recovered']
 
 
-file_name = 'simulation_results_rev17_wide.csv'
-# Un comment when simulatin model based on errors
-# file_name = 'simulation_results_rev17_wide_errors.csv' 
+file_name = 'simulation_results_v1.csv'
+# Un comment when simulating model based on errors
+# file_name = 'simulation_results_v2.csv' 
 
 
 # If the file not exist, write the header first

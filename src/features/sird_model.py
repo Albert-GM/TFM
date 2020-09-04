@@ -282,7 +282,7 @@ class SIRD_model:
 
 
 if __name__ == '__main__':
-
+    # one simulation of the SIRD model with the spcified parameters
     R0 = 3.139940
     Tr = 22.677001
     omega = 0.646553

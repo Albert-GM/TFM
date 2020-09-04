@@ -13,7 +13,7 @@ sys.path.append(root_project)
 
 import numpy as np
 import pandas as pd
-from sklearn.externals import joblib
+import joblib
 from sklearn.impute import SimpleImputer
 from sklearn.pipeline import Pipeline
 from sklearn.model_selection import train_test_split, GridSearchCV, RandomizedSearchCV
@@ -80,15 +80,19 @@ random_grid = {
     'regressor__bootstrap': bootstrap,
 }
 
-# Uncomment next lines for training the model
+scoring = {'R2': 'r2', 'RMSE': 'neg_root_mean_squared_error',
+           'MAE': 'neg_mean_absolute_error'}
 
-# randomsearch = RandomizedSearchCV(
-#     rnd_reg,
-#     random_grid,
-#     random_state=42,
-#     n_iter=100,
-#     n_jobs=-1,
-#     verbose=1)
+randomsearch = RandomizedSearchCV(
+    rnd_reg,
+    random_grid,
+    scoring=scoring,
+    refit='R2',
+    random_state=42,
+    n_iter=100,
+    n_jobs=-1,
+    verbose=1)
+# Uncomment next lines for training the model
 # randomsearch.fit(X_train_test, y_train_test)
 # joblib.dump(randomsearch, f"{root_project}/models/randomsearch_departures.pkl")
 
@@ -107,13 +111,17 @@ params = {
     'regressor__bootstrap': [True],
 }
 
-# Uncomment next lines for training the model
+scoring = {'R2': 'r2', 'RMSE': 'neg_root_mean_squared_error',
+           'MAE': 'neg_mean_absolute_error'}
 
-# gridsearch = GridSearchCV(
-#     rnd_reg,
-#     param_grid=params,
-#     n_jobs=1,
-#     verbose=1)
+gridsearch = GridSearchCV(
+    rnd_reg,
+    param_grid=params,
+    scoring=scoring,
+    refit='R2',
+    n_jobs=-1,
+    verbose=1)
+# Uncomment next lines for training the model
 # gridsearch.fit(X_train_test, y_train_test)
 # joblib.dump(gridsearch, f"{root_project}/models/gridsearch_departures.pkl")
 
@@ -158,15 +166,19 @@ y_train_test = df_model_train_test['arrivals']
 X_train, X_test, y_train, y_test = train_test_split(
     X_train_test, y_train_test, random_state=42)
 
-# Uncomment next lines for training the model
+scoring = {'R2': 'r2', 'RMSE': 'neg_root_mean_squared_error',
+           'MAE': 'neg_mean_absolute_error'}
 
-# randomsearch = RandomizedSearchCV(
-#     rnd_reg,
-#     random_grid,
-#     random_state=42,
-#     n_iter=100,
-#     n_jobs=-1,
-#     verbose=1)
+randomsearch = RandomizedSearchCV(
+    rnd_reg,
+    random_grid,
+    scoring=scoring,
+    refit='R2',    
+    random_state=42,
+    n_iter=100,
+    n_jobs=-1,
+    verbose=1)
+# Uncomment next lines for training the model
 # randomsearch.fit(X_train_test, y_train_test)
 # joblib.dump(randomsearch, f"{root_project}/models/randomsearch_arrivals.pkl")
 

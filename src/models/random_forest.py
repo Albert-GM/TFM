@@ -104,14 +104,15 @@ random_search = RandomizedSearchCV(pipe,
                                    param_distributions=param_dist,
                                    scoring=scoring,
                                    refit='R2',                                         
-                                   verbose=1, n_iter=50, cv=3, n_jobs=-1)
+                                   verbose=1, n_iter=100, cv=3, n_jobs=-1)
 
 
-random_search.fit(X_train_val, y_train_val)
-joblib.dump(random_search, f"{PATH}/{MODEL_NAME}.pkl")
+
+# random_search.fit(X_train_val, y_train_val)
+# joblib.dump(random_search, f"{PATH}/{MODEL_NAME}.pkl")
 
 # # Load a model
-# # random_search = joblib.load(LOAD_PATH)
+random_search = joblib.load(LOAD_PATH)
 
 # Train the pipe with only train data and best parameters of random search
 pipe.set_params(**random_search.best_params_)
