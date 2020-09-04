@@ -92,10 +92,10 @@ target/
 # custom
 /models/
 /notebooks/
-/data/
 
 # singles files
 test_set.pickle
 train_val_set.pickle
 train_val_set_v1.pickle
 train_val_set_v2.pickle
+world_indicators_data.csv
