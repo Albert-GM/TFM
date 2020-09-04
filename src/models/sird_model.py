@@ -5,23 +5,26 @@ import re
 root_project = re.findall(r'(^\S*TFM-master)', os.getcwd())[0]
 sys.path.append(root_project)
 
+from sklearn.model_selection import ParameterSampler
+from scipy.stats import uniform, expon, randint
+import pandas as pd
+import numpy as np
 from src.utils.sird_support import first_deceased, infection_power, mortality_power,\
     top_k_countries, countries_reaction, closing_country, check_array_div
-import numpy as np
-import pandas as pd
-from scipy.stats import uniform, expon, randint
-from sklearn.model_selection import ParameterSampler
 
 
 
 class SIRD_model:
     """
     Simulates the spread of a infectious disease around the world.
-    The main model is based on the SIR model, but adds other characteristics to
-    make it more representative of how countries behave facing a global epidemic.
-    The model simplifies the movement of people between countries to the movement
-    between airports. The model incorporates the closure of airports with
-    reaction time after a certain number of deceased from the epidemic is exceeded.
+    Model based in the classic SIR model with deceased population. There is
+    a SIRD model for each country and each one has its own population of susceptible,
+    infected,recovered and deceased. The interactions are defined as movements
+    of individuals from one country (origin) to another (destination). These
+    individuals at the moment of moving can be susceptible, infected or recovered
+    and they become part of the destination population. The model also enables
+    countries to close the connection with other countries with a reaction time
+    to do it.
 
     """
 
@@ -38,10 +41,8 @@ class SIRD_model:
         self.Tr = Tr
         self.omega = omega
         self.i_country = i_country
-        # self.limit_deceased = limit_deceased
         self.n_closed = n_closed
         self.react_time = react_time
-
 
     def simulate(self):
         """
@@ -52,9 +53,9 @@ class SIRD_model:
         None.
 
         """
-        
+
         self.idx_country = SIRD_model.df.loc[SIRD_model.df["country_code"]
-                                            == self.i_country].index.item()
+                                             == self.i_country].index.item()
         N_i = SIRD_model.df['total_pop'].values  # Population of each country
         n = len(N_i)  # Total number of countries
         top_countries = top_k_countries(
@@ -68,7 +69,8 @@ class SIRD_model:
         # subtracts it from the population of susceptible
         SIRD[self.idx_country, 1] += self.initial_infected
         SIRD[self.idx_country, 0] -= self.initial_infected
-        SIRD_p = SIRD / SIRD.sum(axis=1).reshape(-1, 1)  # SIRD matrix normalized
+        # SIRD matrix normalized
+        SIRD_p = SIRD / SIRD.sum(axis=1).reshape(-1, 1)
 
         # Compute the epidemic's parameters of the SIRD model
         self.Tc = self.Tr / self.R0
@@ -88,7 +90,7 @@ class SIRD_model:
 
         self.OD_sim = SIRD_model.OD.copy()  # keep the original OD matrix
 
-        flag_react = 1  
+        flag_react = 1
         flag_deaths = 1
 
         # Start the simulation
@@ -115,10 +117,8 @@ class SIRD_model:
             N_i = SIRD.sum(axis=1)
             # Compute new infected at t.
             new_infected = check_array_div(beta_v * SIRD[:, 0] * SIRD[:, 1],
-                                            N_i)
-            # new_infected = (beta_v * SIRD[:, 0] * SIRD[:, 1]) / N_i
+                                           N_i)
             # If the population N_i of a country is 0, new_infected is 0
-            # new_infected = np.where(np.isnan(new_infected), 0, new_infected)
             # New infected can't be higher than susceptible
             new_infected = np.where(new_infected > SIRD[:, 0], SIRD[:, 0],
                                     new_infected)
@@ -128,47 +128,36 @@ class SIRD_model:
             new_deceased = self.omega * SIRD[:, 1]
             # Updating SIRD matrix according epidemic transitions
             SIRD[:, 0] = SIRD[:, 0] - new_infected
-            SIRD[:, 1] = SIRD[:, 1] + new_infected - new_recovered -new_deceased
+            SIRD[:, 1] = SIRD[:, 1] + new_infected - \
+                new_recovered - new_deceased
             SIRD[:, 2] = SIRD[:, 2] + new_recovered
             SIRD[:, 3] = SIRD[:, 3] + new_deceased
             SIRD_p = check_array_div(SIRD, SIRD.sum(axis=1).reshape(-1, 1))
-            # SIRD_p = SIRD / SIRD.sum(axis=1).reshape(-1, 1)
-            # Checking for nan
-            # SIRD_p = np.where(np.isnan(SIRD_p), 0, SIRD_p)
             # Saving information of the day t
             SIRD_t[:, :, t] = np.floor(SIRD)
             new_infected_t[:, t] = np.floor(new_infected)
             new_recovered_t[:, t] = np.floor(new_recovered)
             new_deceased_t[:, t] = np.floor(new_deceased)
 
-            # if new_deceased.sum() > self.limit_deceased and flag:
-            #     country_react, flag = countries_reaction(t, self.react_time,
-            #                                              top_countries)
-            
             # Compute day first deceased and 2 weeks later
             if new_deceased_t.sum() > 0 and flag_deaths:
-                if t <= SIRD_model.sim_time - (SIRD_model.feat_time+1):
-                    day_a, day_b = t, t + SIRD_model.feat_time 
+                if t <= SIRD_model.sim_time - (SIRD_model.feat_time + 1):
+                    day_a, day_b = t, t + SIRD_model.feat_time
                 # Assert that the interval is two weeks in extreme cases
                 else:
-                    day_a = SIRD_model.sim_time - (SIRD_model.feat_time+1)
-                    day_b = (SIRD_model.sim_time-1)
+                    day_a = SIRD_model.sim_time - (SIRD_model.feat_time + 1)
+                    day_b = (SIRD_model.sim_time - 1)
                 if self.n_closed > 0:
-                    country_react, flag_react = countries_reaction(day_b, self.react_time,
-                                                              top_countries)
+                    country_react, flag_react = countries_reaction(
+                        day_b, self.react_time, top_countries)
                 flag_deaths = 0
 
-            # if not flag:
-            #     self.OD_sim = closing_country(country_react, self.OD_sim, t)
-                
-                
             if not flag_react:
                 self.OD_sim = closing_country(country_react, self.OD_sim, t)
-                # print("Closing airports....")
         # If flag=1 there are not deceased
         if flag_deaths:
             day_a, day_b = 0, 0
-        
+
         self.sim_results_ = {
             'new_infected_world_t': new_infected_t.sum(axis=0),
             'new_recovered_world_t': new_recovered_t.sum(axis=0),
@@ -178,20 +167,17 @@ class SIRD_model:
             'new_deceased_t': new_deceased_t,
             'SIRD_t': SIRD_t,
             'SIRD_p_t': check_array_div(SIRD_t,
-                                       SIRD_t.sum(axis=1)[:, np.newaxis, :]),
-            # 'SIRD_p_t': SIRD_t / SIRD_t.sum(axis=1)[:, np.newaxis, :],
+                                        SIRD_t.sum(axis=1)[:, np.newaxis, :]),
             'SIRD_world_t': SIRD_t.sum(axis=0),
             'total_infected': new_infected_t.sum() + SIRD_model.initial_infected,
             'total_recovered': new_recovered_t.sum(),
             'total_deceased': new_deceased_t.sum(),
             'day_a': day_a,
             'day_b': day_b
-            }
-        
+        }
+
         self.sim_results_['SIRD_world_p_t'] = self.sim_results_[
             'SIRD_world_t'] / self.sim_results_['SIRD_world_t'].sum(axis=0)
-
-
 
     def compute_disease_features(self):
         """
@@ -203,12 +189,11 @@ class SIRD_model:
         None.
 
         """
-        
+
         if not hasattr(self, 'sim_results_'):
-            raise ValueError('The model needs to be simulated first.')        
+            raise ValueError('The model needs to be simulated first.')
 
         if self.sim_results_['new_deceased_world_t'].sum() > 0:
-            # day_1, day_2 = first_deceased(self.sim_results_['new_deceased_world_t'])
 
             inf_pow_1, inf_pow_2, gradient_inf = infection_power(
                 self.sim_results_['new_infected_world_t'],
@@ -226,9 +211,9 @@ class SIRD_model:
         else:
             inf_pow_1, inf_pow_2, gradient_inf = 0, 0, np.array([0])
 
-            mort_pow_1, mort_pow_2, mort_pow_3, gradient_mort = 0, 0, 0, np.array([0])
+            mort_pow_1, mort_pow_2, mort_pow_3, gradient_mort = 0, 0, 0, np.array([
+                                                                                  0])
 
-        
         self.epidemic_features_ = {
             'inf_pow_1': inf_pow_1,
             'inf_pow_2': inf_pow_2,
@@ -237,9 +222,7 @@ class SIRD_model:
             'mort_pow_2': mort_pow_2,
             'mort_pow_3': mort_pow_3,
             'gradient_mort': gradient_mort
-            }
-
-
+        }
 
     def get_simulation_data(self):
         """
@@ -252,13 +235,13 @@ class SIRD_model:
         None.
 
         """
-        
+
         if not hasattr(self, 'sim_results_'):
             raise ValueError('The model needs to be simulated first.')
-            
+
         if not hasattr(self, 'epidemic_features_'):
             raise ValueError('The disease features need to be computed first.')
-                             
+
         self.sim_param = {
             'R0': self.R0,
             'Tr': self.Tr,
@@ -266,7 +249,6 @@ class SIRD_model:
             'omega': self.omega,
             'i_country': self.i_country,
             'idx_country': self.idx_country,
-            # 'limit_deceased': self.limit_deceased,
             'n_closed': self.n_closed,
             'react_time': self.react_time,
             'simulation_time': self.sim_time}
@@ -276,8 +258,6 @@ class SIRD_model:
             **self.epidemic_features_,
             **self.sim_results_}
 
-
-    
     @classmethod
     def update_params(cls, param_dict):
         """
@@ -296,19 +276,16 @@ class SIRD_model:
         None.
 
         """
-        
+
         for item in param_dict.items():
             setattr(cls, item[0], item[1])
-        
-        
 
 
 if __name__ == '__main__':
-    
+
     R0 = 3.139940
-    Tr = 22.677001		
+    Tr = 22.677001
     omega = 0.646553
-    # limit_deceased = 181
     n_closed = 6
     react_time = 10
     i_country = 'PYF'
@@ -317,205 +294,3 @@ if __name__ == '__main__':
     sird_instance.simulate()
     sird_instance.compute_disease_features()
     foo = sird_instance.get_simulation_data()
-    
-    
-    
-    
-    # def simulate(self):
-    #     """
-    #     Begins the simulation with the parameters specified in the constructor
-
-    #     Returns
-    #     -------
-    #     None.
-
-    #     """
-        
-    #     self.idx_country = SIR_model.df.loc[SIR_model.df["country_code"]
-    #                                         == self.i_country].index.item()
-    #     N_i = SIR_model.df['total_pop'].values  # Population of each country
-    #     n = len(N_i)  # Total number of countries
-    #     top_countries = top_k_countries(
-    #         self.n_closed, SIR_model.df, self.idx_country)
-    #     # Starting the SIR matrix
-    #     SIR = np.zeros((n, 3))
-    #     # Assign to the susceptible population all the population of the
-    #     # country
-    #     SIR[:, 0] = N_i
-    #     # Assign to the population of infected the initial number of infected and
-    #     # subtracts it from the population of susceptible
-    #     SIR[self.idx_country, 1] += self.initial_infected
-    #     SIR[self.idx_country, 0] -= self.initial_infected
-    #     SIR_p = SIR / SIR.sum(axis=1).reshape(-1, 1)  # SIR matrix normalized
-
-    #     # Compute the epidemic's parameters of the SIR model
-    #     self.Tc = self.Tr / self.R0
-    #     # Average number of contacts per person per time
-    #     beta = self.Tc ** (-1)
-    #     gamma = self.Tr ** (-1)  # Rate of removed
-    #     # R0 = beta / gamma
-    #     # Make vectors from the parameters
-    #     beta_v = np.full(n, beta)
-    #     gamma_v = np.full(n, gamma)
-
-    #     # Arrays to save the information from the simulation
-    #     new_infected_t = np.zeros((n, SIR_model.sim_time))
-    #     new_removed_t = np.zeros((n, SIR_model.sim_time))
-    #     deaths_t = np.zeros((n, SIR_model.sim_time))
-    #     SIR_t = np.zeros((n, 3, SIR_model.sim_time))
-
-    #     self.OD_sim = SIR_model.OD.copy()  # keep the original OD matrix
-
-    #     flag = 1  # Flag for countries_reaction function
-
-    #     # Starting the simulation
-    #     for t in range(SIR_model.sim_time):
-    #         # OD matrix of susceptible, infected and removed
-    #         S = np.array([SIR_p[:, 0], ] * n).T
-    #         I = np.array([SIR_p[:, 1], ] * n).T
-    #         R = np.array([SIR_p[:, 2], ] * n).T
-    #         # element-wise multiplication
-    #         OD_S, OD_I, OD_R = np.floor(
-    #             self.OD_sim * S), np.floor(self.OD_sim * I), np.floor(self.OD_sim * R)
-    #         # People entering and leaving by group for each country
-    #         out_S, in_S = OD_S.sum(axis=1), OD_S.sum(axis=0)
-    #         out_I, in_I = OD_I.sum(axis=1), OD_I.sum(axis=0)
-    #         out_R, in_R = OD_R.sum(axis=1), OD_R.sum(axis=0)
-    #         # Updating SIR matrix according travels
-    #         SIR[:, 0] = SIR[:, 0] - out_S + in_S
-    #         SIR[:, 1] = SIR[:, 1] - out_I + in_I
-    #         SIR[:, 2] = SIR[:, 2] - out_R + in_R
-    #         # Checking for negative values in SIR
-    #         SIR = np.where(SIR < 0, 0, SIR)
-    #         # Updating population of each country
-    #         N_i = SIR.sum(axis=1)
-    #         # Computing new infected people at t.
-    #         new_infected = (beta_v * SIR[:, 0] * SIR[:, 1]) / N_i
-    #         # If the population N_i of a country is 0, new_infected is 0
-    #         new_infected = np.where(np.isnan(new_infected), 0, new_infected)
-    #         # New infected can't be higher than susceptible
-    #         new_infected = np.where(new_infected > SIR[:, 0], SIR[:, 0],
-    #                                 new_infected)
-    #         new_removed = gamma_v * SIR[:, 1]  # New removed at t
-    #         # deaths computed from removed people at period t
-    #         deaths = new_removed * self.omega
-    #         # Updating SIR matrix according epidemic transitions
-    #         SIR[:, 0] = SIR[:, 0] - new_infected
-    #         SIR[:, 1] = SIR[:, 1] + new_infected - new_removed
-    #         SIR[:, 2] = SIR[:, 2] + new_removed
-    #         SIR_p = SIR / SIR.sum(axis=1).reshape(-1, 1)
-    #         # Checking for nan
-    #         SIR_p = np.where(np.isnan(SIR_p), 0, SIR_p)
-    #         # Saving information of the day t
-    #         SIR_t[:, :, t] = np.floor(SIR)
-    #         new_infected_t[:, t] = np.floor(new_infected)
-    #         new_removed_t[:, t] = np.floor(new_removed)
-    #         deaths_t[:, t] = np.floor(deaths)
-
-    #         if deaths_t.sum() > self.limit_deaths and flag:
-    #             country_react, flag = countries_reaction(t, self.react_time,
-    #                                                      top_countries)
-
-    #         if not flag:
-    #             self.OD_sim = closing_country(country_react, self.OD_sim, t)
-                
-
-    #     self.sim_results_ = {
-    #         'new_infected_world_t': new_infected_t.sum(axis=0),
-    #         'new_removed_world_t': new_removed_t.sum(axis=0),
-    #         'deaths_world_t': deaths_t.sum(axis=0),
-    #         'SIR_world_t': SIR_t.sum(axis=0),
-    #         'SIR_p_t': SIR_t / SIR_t.sum(axis=1)[:, np.newaxis, :],
-    #         'total_infected': new_infected_t.sum() + SIR_model.initial_infected,
-    #         'total_removed': new_removed_t.sum(),
-    #         'total_death': deaths_t.sum(),
-    #         'SIR_t': SIR_t,
-    #         'new_infected_t': new_infected_t,
-    #         'new_removed_t': new_removed_t,
-    #         'deaths_t': deaths_t,
-    #         }
-        
-    #     self.sim_results_['SIR_world_p_t'] = self.sim_results_[
-    #         'SIR_world_t'] / self.sim_results_['SIR_world_t'].sum(axis=0)
-    
-    
-    
-    
-    
-    
-        # self.sim_results_ = {}
-        # self.sim_results_['new_infected_world_t'] = new_infected_t.sum(axis=0)
-        # self.sim_results_['new_removed_world_t'] = new_removed_t.sum(axis=0)
-        # self.sim_results_['deaths_world_t'] = deaths_t.sum(axis=0)
-        # self.sim_results_['SIR_world_t'] = SIR_t.sum(axis=0)
-        # self.sim_results_['SIR_world_p_t'] = self.sim_results_[
-        #     'SIR_world_t'] / self.sim_results_['SIR_world_t'].sum(axis=0)
-        # self.sim_results_['SIR_p_t'] = SIR_t / \
-        #     SIR_t.sum(axis=1)[:, np.newaxis, :]
-        # self.sim_results_['total_infected'] = new_infected_t.sum(
-        # ) + SIR_model.initial_infected
-        # self.sim_results_['total_removed'] = new_removed_t.sum()
-        # self.sim_results_['total_death'] = deaths_t.sum()
-        # self.sim_results_['SIR_t'] = SIR_t
-        # self.sim_results_['new_infected_t'] = new_infected_t
-        # self.sim_results_['new_removed_t'] = new_removed_t
-        # self.sim_results_['deaths_t'] = deaths_t
-        
-        # self.new_infected_world_t_ = self.new_infected_t_.sum(axis=0)
-        # self.new_removed_world_t_ = self.new_removed_t_.sum(axis=0)
-        # self.deaths_world_t_ = self.deaths_t_.sum(axis=0)
-        # self.SIR_world_t_ = self.SIR_t_.sum(axis=0)
-        # self.SIR_world_p_t_ = self.SIR_world_t_ / self.SIR_world_t_.sum(axis=0)
-        # self.SIR_p_t_ = self.SIR_t_ / self.SIR_t_.sum(axis=1)[:, np.newaxis, :]
-        # self.total_infected_ = self.new_infected_t_.sum() + SIR_model.initial_infected
-        # self.total_removed_ = self.new_removed_t_.sum()
-        # self.total_death_ = self.deaths_t_.sum()
-    
-    
-    # def get_simulation_data(self, output_mode='short'):
-    #     """
-    #     Returns simulation data and epidemic features. If output_mode='short'
-    #     summarized data about the epidemic
-    #     is provided, whereas output_mode='large', all the data is provided.
-
-    #     Parameters
-    #     ----------
-    #     output_mode : string, optional
-    #         'short' or 'large'. The default is 'short'.
-
-    #     Raises
-    #     ------
-    #     ValueError
-    #         Raise an error if the output_mode value is not correct.
-
-    #     Returns
-    #     -------
-    #     tuple
-
-    #     """
-
-    #     output_mode_options = ['short', 'large']
-
-    #     if output_mode not in output_mode_options:
-    #         raise ValueError(
-    #             f"Invalid argument. Expected one of {output_mode_options}")
-
-    #     elif output_mode == 'short':
-    #         return self.i_country, self.idx_country, self.R0, self.Tc, self.Tr,\
-    #             self.omega, self.inf_pow_1, self.inf_pow_2,\
-    #             self.mort_pow_1, self.mort_pow_2, self.mort_pow_3,\
-    #             self.limit_deaths, self.n_closed,\
-    #             self.react_time, self.total_infected_, self.total_death_,\
-    #             self.total_death_, self.total_removed_
-
-    #     elif output_mode == 'large':
-    #         return self.i_country, self.idx_country, self.R0, self.Tc, self.Tr,\
-    #             self.omega, self.inf_pow_1, self.inf_pow_2, self.gradient_inf,\
-    #             self.mort_pow_1, self.mort_pow_2, self.mort_pow_3,\
-    #             self.gradient_mort, self.limit_deaths, self.n_closed,\
-    #             self.react_time, self.total_infected_, self.total_death_,\
-    #             self.total_death_, self.total_removed_, self.new_infected_t_,\
-    #             self.new_infected_world_t_, self.deaths_t_, self.deaths_world_t_,\
-    #             self.new_removed_t_, self.new_infected_world_t_, self.SIR_t_,\
-    #             self.SIR_world_t_, self.SIR_p_t_, self.SIR_world_p_t_
-

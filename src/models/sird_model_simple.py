@@ -69,10 +69,6 @@ def SIRD_model_simple(N, I0, Ro, T_r, omega, T):
     plt.title("SIRD MODEL", fontsize=20)
     ax.set_ylabel("Individuals")
     ax.set_xlabel("Time")
-    # ax.annotate(
-    #     f"Initial population: {N:.2e}\nInitial infected: {I0}\nBasic reproduction number: {Ro}\nRecovery time: {T_r}\nDeath rate: {omega}",
-    #     xy=(0.75, 0.8), xytext=(12, -12), va='top', xycoords='axes fraction',
-    #     textcoords='offset points')
     plt.legend()
     plt.tight_layout()
     

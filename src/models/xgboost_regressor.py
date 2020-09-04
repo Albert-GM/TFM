@@ -111,8 +111,6 @@ errors_distribution(estimator, X_val, y_val, df_train_val, n=1000 )
 
 
 # Score in test set
-
-
 df_test = pd.read_pickle(
     f"{root_project}/data/processed/test_set.pickle")
 

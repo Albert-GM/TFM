@@ -154,8 +154,6 @@ def infection_power(new_infected_world_t, SIRD_world_t, day_1, day_2):
     
         slope_2 = check_division((SIRD_world_t[1, day_2] -
                    SIRD_world_t[1, day_1]),  SIRD_world_t[1, day_1])
-        # slope_2 = (SIRD_world_t[1, day_2] -
-        #            SIRD_world_t[1, day_1]) / SIRD_world_t[1, day_1]
     
         gradient = np.gradient(SIRD_world_t[1, day_1:day_2])
 
@@ -193,15 +191,7 @@ def mortality_power(new_deceased_world_t, new_infected_world_t, SIRD_world_t,
         
         ratio_3 = check_division(new_deceased_world_t[day_1:day_2].sum(),
                                  SIRD_world_t[2, day_2] - SIRD_world_t[2, day_1])
-    
-        # ratio_1 = new_deceased_world_t[:day_2].sum(
-        # ) / (new_infected_world_t[day_1:day_2].sum())
-    
-        # ratio_2 = (new_deceased_world_t[day_1:day_2].sum() /
-        #            (SIRD_world_t[1, day_2] - SIRD_world_t[1, day_1]))
-    
-        # ratio_3 = (new_deceased_world_t[day_1:day_2].sum() /
-        #            (SIRD_world_t[2, day_2] - SIRD_world_t[2, day_1]))
+
     
         gradient = np.gradient(new_deceased_world_t[day_1:day_2])
 

@@ -16,6 +16,7 @@ import re
 from sklearn.pipeline import Pipeline
 from yellowbrick.model_selection import LearningCurve, FeatureImportances
 from yellowbrick.regressor import ResidualsPlot
+from tensorflow.keras.models import Sequential
 root_project = re.findall(r'(^\S*TFM-master)', os.getcwd())[0]
 
 
@@ -247,21 +248,18 @@ def errors_distribution(estimator, X_val, y_val, df, n=200,
     Prints out some plots to compare the distribution of the features in the
     train set against the distribuition of the features in the n samples with
     higher absoulute value prediction errors. It allows to see in which type
-    of samples the model is predicting worse. If scaled_test='True' pass as
-    extra argument X_test_scaled
+    of samples the model is predicting worse.
 
     Parameters
     ----------
-    model : sklearn.estimator
+    estimator : sklearn.estimator
         A trained sklearn.estimator.
-    X_test : pandas.DataFrame
-    y_test : pandas.DataFrame
-    X_train : pandas.DataFrame
-        Without scaling.
+    X_val : pandas.DataFrame
+        Scaled if needed.
+    y_val : pandas.DataFrame
+    df : pandas.DataFrame
     n : int, optional
         Number of samples to consider in the errors set top. The default is 200.
-    X_test_scaled : bool, optional
-        If passed the estimator predicts with scaled data.
 
 
     Returns
@@ -271,8 +269,11 @@ def errors_distribution(estimator, X_val, y_val, df, n=200,
     """
 
     X_err = X_val.copy()
+    
+    if isinstance(estimator, Sequential):
+        X_err = pd.DataFrame(X_err)
 
-    X_err['predicted'] = estimator.predict(X_val)
+    X_err['predicted'] = estimator.predict(X_val).flatten()
 
     X_err['real'] = y_val
     X_err['error'] = X_err['real'] - X_err['predicted']
@@ -301,8 +302,25 @@ def errors_distribution(estimator, X_val, y_val, df, n=200,
 
 
 def plot_predictions(estimator, X_test, y_test, samples=20):
+    """
+    Plot predictions agains real values. It shows the number of predicted
+    samples specified in the input.
 
-    y_predicted = estimator.predict(X_test)
+    Parameters
+    ----------
+    estimator : sklearn.estimator
+    X_test : pandas.DataFrame
+    y_test : pandas.series
+    samples : int, optional
+        Samples to plot. The default is 20.
+
+    Returns
+    -------
+    None.
+
+    """
+
+    y_predicted = estimator.predict(X_test).flatten()
     df_predicted = pd.DataFrame({'Actual': y_test, 'Predicted': y_predicted})
     df_predicted.sample(samples).plot(kind='barh', figsize=(10, 20))
     plt.show()
@@ -320,9 +338,31 @@ def plot_visualizations(PATH,
                         learningcurve=True,
                         featureimportance=True,
                         residualsplot=True):
-    
-    # if isinstance(estimator, Pipeline):
-    #     estimator = estimator['estimator']
+    """
+    Plots differents plots that provide information about the estimator.
+
+    Parameters
+    ----------
+    PATH : string
+    estimator : sklearn.estimator
+    X_train : pandas.DataFrame
+    y_train : pandas.series
+    X_val : pandas.DataFrame
+    y_val : pandas.series
+    figsize : tuple, optional
+    learningcurve : TYPE, optional
+        True if plot is wanted. The default is True.
+    featureimportance : TYPE, optional
+        True if plot is wanted. The default is True.
+    residualsplot : TYPE, optional
+        True if plot is wanted. The default is True.
+
+    Returns
+    -------
+    None.
+
+    """
+
     if learningcurve:
         fig, ax = plt.subplots(1, 1, figsize=figsize)
         visualizer = LearningCurve(estimator, n_jobs=6)
@@ -351,14 +391,30 @@ def plot_visualizations(PATH,
         plt.savefig(
             f"{PATH}/feature_importance.png")
 
-
-
     return None
 
 
 
 
 def take_samples(df_v1, df_v2, n_samples, ratio_errors=0.2):
+    """
+    Mixs two dataframes according to the ratio enter as input. 
+
+    Parameters
+    ----------
+    df_v1 : pandas.DataFrame
+    df_v2 : pandas.DataFrame
+    n_samples : int
+        Total number of samples in the final dataframe.
+    ratio_errors : float, optional
+        Ratio of df_v2 to include in the final dataframe. The default is 0.2.
+
+
+    Returns
+    -------
+    df : pandas.DataFrame
+
+    """
     
     if df_v1.shape[1] != df_v2.shape[1]:
         raise ValueError("Data have different number of features.")
