@@ -20,6 +20,7 @@ root_project = re.findall(r'(^\S*TFM)', os.getcwd())[0]
 # Uncomment following line when estimator is a keras sequential model
 # from tensorflow.keras.models import Sequential
 
+
 def extract_indicator(df, indicator, initial_year=None, final_year=None):
     """
     Selects the indicator and the years or year we are
@@ -104,46 +105,71 @@ def last_values(df):
                 last_values.append(np.nan)
             else:
                 pass
-    df2 = df.copy() 
+    df2 = df.copy()
     df2['last_value'] = last_values
     return df2[['Country Name', 'Country Code', 'last_value']]
 
 
-def results_searchcv(cv_estimator, estimator, X_test=None, y_test=None):
+def results_searchcv(
+        cv_estimator,
+        estimator,
+        path=None,
+        X_test=None,
+        y_test=None):
     """
     Prints out useful information about a cross-validated estimator. Given X_test,
-    and y_test, provides performance in data not seen by the estimator.
+    and y_test, provides performance in data not seen by the estimator. If path
+    is not None, write the dictionary in a file.
 
     Parameters
     ----------
     cv_estimator : RandomizedSearchCV or GridSeachCV
         A trained cross-validated estimator.
-    estimator: sklearn estimator
+    estimator : sklearn estimator
         A trained estimator, but not in X_test, y_test
+    path : string
+        Path to save the dictionary
     X_test : pandas.DataFrame or array
     y_test : pandas.DataFrame, pandas.Series or array
 
     Returns
     -------
-    None.
+    Dictionary with the information.
 
     """
-    print("=" * 20)
-    print(f"Cross-val best score:\n{cv_estimator.best_score_}")
-    print(
-        f"Cross-val std:\n{cv_estimator.cv_results_['std_test_R2'][cv_estimator.best_index_]}")   
-    print(f"Cross-val RMSE:\n{-cv_estimator.cv_results_['mean_test_RMSE'][cv_estimator.best_index_]}")
-    print(f"Cross-val MAE:\n{-cv_estimator.cv_results_['mean_test_MAE'][cv_estimator.best_index_]}")
-
-    print(f"Best parameters found:\n{cv_estimator.best_params_}")
+    res_dict = {}
+    res_dict['best_score_cross-val'] = cv_estimator.best_score_
+    res_dict['std_cross-val'] = cv_estimator.cv_results_['std_test_R2'][cv_estimator.best_index_]
+    res_dict['RMSE_cross-val'] = - \
+        cv_estimator.cv_results_['mean_test_RMSE'][cv_estimator.best_index_]
+    res_dict['MAE_cross-val'] = - \
+        cv_estimator.cv_results_['mean_test_MAE'][cv_estimator.best_index_]
+    res_dict['best_params'] = cv_estimator.best_params_
     if X_test is not None and y_test is not None:
         y_predicted = estimator.predict(X_test)
-        print(f"R-squared in test\n{r2_score(y_test, y_predicted)}")
-        print(
-            f"RMSE in test:\n{mean_squared_error(y_test, y_predicted, squared=False)}")
-        print(f"MAE in test:\n{mean_absolute_error(y_test, y_predicted)}")
+        res_dict['R2_test'] = r2_score(y_test, y_predicted)
+        res_dict['RMSE_test'] = mean_squared_error(
+            y_test, y_predicted, squared=False)
+        res_dict['MAE_test'] = mean_absolute_error(y_test, y_predicted)
+
     print("=" * 20)
-    return None
+    print(f"Cross-val best score:\n{res_dict['best_score_cross-val']}")
+    print(
+        f"Cross-val std:\n{res_dict['std_cross-val']}")
+    print(f"Cross-val RMSE:\n{res_dict['RMSE_cross-val']}")
+    print(f"Cross-val MAE:\n{res_dict['MAE_cross-val']}")
+    print(f"Best parameters found:\n{res_dict['best_params']}")
+    if X_test is not None and y_test is not None:
+        print(f"R-squared in test\n{res_dict['R2_test']}")
+        print(
+            f"RMSE in test:\n{res_dict['RMSE_test']}")
+        print(f"MAE in test:\n{res_dict['MAE_test']}")
+    print("=" * 20)
+
+    if path is not None:
+        with open(path, 'w') as file:
+            file.write(json.dumps(res_dict))
+    return res_dict
 
 
 def results_estimator(estimator, X_test, y_test):
@@ -267,7 +293,7 @@ def errors_distribution(estimator, X_val, y_val, df, n=200,
     """
 
     X_err = X_val.copy()
-    
+
     # Uncomment following twho lines when estimator is a keras sequential model
     # if isinstance(estimator, Sequential):
     #     X_err = pd.DataFrame(X_err)
@@ -295,7 +321,6 @@ def errors_distribution(estimator, X_val, y_val, df, n=200,
                      label='Original', ax=ax[i])
         sns.distplot(df.loc[error_idx, feature], hist=True, color='red',
                      label='Errors', ax=ax[i])
-
 
     return None
 
@@ -370,7 +395,7 @@ def plot_visualizations(PATH,
         visualizer.show()           # Finalize and render the figure
         plt.savefig(
             f"{PATH}/learning_curve.png")
-        
+
     if residualsplot:
         fig, ax = plt.subplots(1, 1, figsize=figsize)
         viz = ResidualsPlot(estimator)
@@ -393,11 +418,9 @@ def plot_visualizations(PATH,
     return None
 
 
-
-
 def take_samples(df_v1, df_v2, n_samples, ratio_errors=0.2):
     """
-    Mixs two dataframes according to the ratio enter as input. 
+    Mixs two dataframes according to the ratio enter as input.
 
     Parameters
     ----------
@@ -414,31 +437,28 @@ def take_samples(df_v1, df_v2, n_samples, ratio_errors=0.2):
     df : pandas.DataFrame
 
     """
-    
+
     if df_v1.shape[1] != df_v2.shape[1]:
         raise ValueError("Data have different number of features.")
-    
+
     l1 = df_v1.shape[0]
     l2 = df_v2.shape[0]
     total_l = l1 + l2
-    
-    error_samples = int(n_samples * ratio_errors)  
-    normal_samples = int(n_samples - error_samples)    
+
+    error_samples = int(n_samples * ratio_errors)
+    normal_samples = int(n_samples - error_samples)
 
     if error_samples > l2:
         raise ValueError("Not enough sample from errors distributions.")
     if normal_samples > l1:
-        raise ValueError("Not enough sample from original distribution.")   
+        raise ValueError("Not enough sample from original distribution.")
     else:
         df = pd.concat([df_v1.sample(normal_samples, random_state=42),
                         df_v2.sample(error_samples, random_state=42)],
                        ignore_index=True).sample(
-                           frac=1,random_state=42).reset_index(drop=True)
+                           frac=1, random_state=42).reset_index(drop=True)
     return df
-    
-    
 
-    
 
 def get_model_data(n_samples=None, ratio=None):
     """
@@ -459,55 +479,22 @@ def get_model_data(n_samples=None, ratio=None):
     df_train_val : pandas.DataFrame
 
     """
-    
+
     df_train_val = pd.read_pickle(
         f"{root_project}/data/processed/train_val_set.pickle")
     df_v1_train_val = pd.read_pickle(
         f"{root_project}/data/processed/train_val_set_v1.pickle")
     df_v2_train_val = pd.read_pickle(
         f"{root_project}/data/processed/train_val_set_v2.pickle")
-    
-    if n_samples != None and ratio != None:
+
+    if n_samples is not None and ratio is not None:
         df_train_val = take_samples(df_v1_train_val,
                                     df_v2_train_val,
                                     n_samples,
                                     ratio)
         return df_train_val
-    elif n_samples != None:  
+    elif n_samples is not None:
         df_train_val = df_train_val.sample(n_samples, random_state=42)
         return df_train_val
     else:
         return df_train_val
-        
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
