@@ -206,9 +206,11 @@ if __name__ == '__main__':
     df_v2 = pd.read_csv(
         f"{root_project}/data/processed/simulation_results_v2.csv")
     
+    print(f"Total number of samples: {len(df_v1) + len(df_v2)}")
+    
     df_v1 = add_features(df_v1)
     test_size= 120000
-    df_test = df_v1.iloc[:test_size]
+    df_test = df_v1.iloc[:test_size] # Test set composed by v1
     df_v1_train_val = df_v1.iloc[test_size:]
 
     df_v2_train_val = add_features(df_v2)
@@ -217,6 +219,7 @@ if __name__ == '__main__':
                                   df_v2_train_val],
                                  ignore_index=True)
     
+    # Train and validation set composed by v1 and v2
     df_train_val_set = df_train_val_set.sample(frac=1).reset_index(drop=True)
 
 

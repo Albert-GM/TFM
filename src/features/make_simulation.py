@@ -50,7 +50,7 @@ param_grid = {'R0' : R0,
               'countries' : countries }
 
 
-n_simulations = 1 # specify the number of simulations to make
+n_simulations = 60000 # specify the number of simulations to make
 param_list = list(ParameterSampler(param_grid, n_iter=n_simulations))
 
 # Features to keep
@@ -72,7 +72,7 @@ dict_keys = [
     'total_recovered']
 
 
-file_name = 'simulation_results_v1.csv'
+file_name = 'simulation_results_v1_rev.csv'
 # Un comment when simulating model based on errors
 # file_name = 'simulation_results_v2.csv' 
 
