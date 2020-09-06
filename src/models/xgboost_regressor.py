@@ -18,7 +18,7 @@ import time
 from scipy.stats import uniform, randint, loguniform
 
 # Get the data
-df_train_val = get_model_data(500000)
+df_train_val = get_model_data(100000)
 
 # Feature selection
 features = [
@@ -99,7 +99,7 @@ random_search = joblib.load(LOAD_PATH)
 estimator = xgb.XGBRegressor(**random_search.best_params_, random_state=42)
 estimator.fit(X_train, y_train)
 
-results_searchcv(random_search, estimator, X_val, y_val)
+results_searchcv(random_search, estimator, f"{PATH}/results.txt", X_val, y_val)
 
 plot_visualizations(PATH, estimator, X_train,
                     y_train, X_val, y_val )
