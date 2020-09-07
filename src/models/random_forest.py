@@ -16,6 +16,7 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.model_selection import RandomizedSearchCV, train_test_split
 from sklearn.pipeline import Pipeline
 from sklearn.impute import SimpleImputer
+from sklearn.base import clone
 import pandas as pd
 from scipy.stats import randint
 import joblib
@@ -27,6 +28,8 @@ import numpy as np
 
 # Get the data
 df_train_val = get_model_data(20000)
+seed = 42
+
 
 # Feature selection
 features = [
@@ -63,7 +66,7 @@ X_train_val = df_train_val.drop('total_deceased', axis=1)
 y_train_val = df_train_val['total_deceased']
 X_train, X_val, y_train, y_val = train_test_split(X_train_val,
                                                   y_train_val,
-                                                  random_state=42)
+                                                  random_state=seed)
 
 # Path naming
 samples = df_train_val.shape[0]
@@ -71,8 +74,10 @@ features = df_train_val.shape[1]
 run_time = time.strftime("run_%d_%m_%Y-%H_%M_%S")
 MODEL_NAME = 'random_forest'
 # Path to save the model
-PATH = f"{root_project}/models/{MODEL_NAME}-{samples}-samples-{features}-feat-{run_time}"
+PATH = f"{root_project}/models/tests/{MODEL_NAME}-{samples}-samples-{features}-feat-{run_time}"
 LOAD_PATH = f"{root_project}/models/{MODEL_NAME}.pkl"
+MODEL_PATH = f"{PATH}/{MODEL_NAME}.pkl"
+RESULTS_PATH = f"{PATH}/results.txt"
 if not os.path.exists(PATH):
     os.makedirs(PATH)
     
@@ -80,7 +85,7 @@ if not os.path.exists(PATH):
 
 pipe = Pipeline([
     ('imputer', SimpleImputer()),
-    ('estimator', RandomForestRegressor(random_state=42))
+    ('estimator', RandomForestRegressor(random_state=seed))
 ])
 
 
@@ -103,25 +108,29 @@ scoring = {'R2': 'r2', 'RMSE': 'neg_root_mean_squared_error',
 random_search = RandomizedSearchCV(pipe,
                                    param_distributions=param_dist,
                                    scoring=scoring,
-                                   refit='R2',                                         
+                                   refit='R2', random_state=seed                                         
                                    verbose=1, n_iter=100, cv=3, n_jobs=-1)
 
 
 
 random_search.fit(X_train_val, y_train_val)
-joblib.dump(random_search, f"{PATH}/{MODEL_NAME}.pkl")
+joblib.dump(random_search, MODEL_PATH)
 
 # # Load a model
 # random_search = joblib.load(LOAD_PATH)
+
+results_searchcv(random_search, RESULTS_PATH)
+
+pipe_plot = clone(pipe) # prevents yellowbrics from change pipe
+plot_visualizations(PATH, pipe_plot, X_train_val,
+                    y_train_val, X_train, y_train, X_val, y_val )
 
 # Train the pipe with only train data and best parameters of random search
 pipe.set_params(**random_search.best_params_)
 pipe.fit(X_train, y_train)
 
-results_searchcv(random_search, pipe, X_val, y_val)
 
-plot_visualizations(PATH, pipe, X_train_val,
-                    y_train_val, X_val, y_val )
+
 
 plot_predictions(pipe, X_val, y_val, samples=50)
 

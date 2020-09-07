@@ -205,8 +205,14 @@ if __name__ == '__main__':
         f"{root_project}/data/processed/simulation_results_v1.csv")
     df_v2 = pd.read_csv(
         f"{root_project}/data/processed/simulation_results_v2.csv")
+    # more simulated data
+    df_v1_rev = pd.read_csv(
+        f"{root_project}/data/processed/simulation_results_v1_rev.csv")
+    df_v2_rev = pd.read_csv(
+        f"{root_project}/data/processed/simulation_results_v2_rev.csv")
     
     print(f"Total number of samples: {len(df_v1) + len(df_v2)}")
+    print(f"Total number of samples (rev): {len(df_v1) + len(df_v2) + len(df_v1_rev) + len(df_v2_rev)} ")
     
     df_v1 = add_features(df_v1)
     test_size= 120000
@@ -215,13 +221,19 @@ if __name__ == '__main__':
 
     df_v2_train_val = add_features(df_v2)
     
-    df_train_val_set = pd.concat([df_v1_train_val,
+    df_train_val = pd.concat([df_v1_train_val,
                                   df_v2_train_val],
+                                 ignore_index=True)
+
+    # Train-validation set with new data 
+    df_train_val_rev = pd.concat([df_train_val,
+                                  add_features(df_v1_rev),
+                                  add_features(df_v2_rev)],
                                  ignore_index=True)
     
     # Train and validation set composed by v1 and v2
-    df_train_val_set = df_train_val_set.sample(frac=1).reset_index(drop=True)
-
+    df_train_val = df_train_val.sample(frac=1).reset_index(drop=True)
+    df_train_val_rev = df_train_val_rev.sample(frac=1).reset_index(drop=True)
 
     print(f"Test size: {df_test.shape[0]}")
     print(f"Train validation size (v1): {df_v1_train_val.shape[0]}")
@@ -237,8 +249,11 @@ if __name__ == '__main__':
     df_v2_train_val.to_pickle(
         f"{root_project}/data/processed/train_val_set_v2.pickle")
     
-    df_train_val_set.to_pickle(
+    df_train_val.to_pickle(
         f"{root_project}/data/processed/train_val_set.pickle")
+    
+    df_train_val_rev.to_pickle(
+        f"{root_project}/data/processed/train_val_set_rev.pickle")
     
     # Uncomment to make .csv files additionally to pickle 
     # df_test.to_csv(

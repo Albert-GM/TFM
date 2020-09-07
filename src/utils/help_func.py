@@ -15,7 +15,7 @@ import os
 import re
 from sklearn.pipeline import Pipeline
 from yellowbrick.model_selection import LearningCurve, FeatureImportances
-from yellowbrick.regressor import ResidualsPlot
+from yellowbrick.regressor import ResidualsPlot, PredictionError
 root_project = re.findall(r'(^\S*TFM)', os.getcwd())[0]
 # Uncomment following line when estimator is a keras sequential model
 # from tensorflow.keras.models import Sequential
@@ -112,8 +112,8 @@ def last_values(df):
 
 def results_searchcv(
         cv_estimator,
-        estimator,
         path=None,
+        estimator=None,
         X_test=None,
         y_test=None):
     """
@@ -145,7 +145,7 @@ def results_searchcv(
     res_dict['MAE_cross-val'] = - \
         cv_estimator.cv_results_['mean_test_MAE'][cv_estimator.best_index_]
     res_dict['best_params'] = cv_estimator.best_params_
-    if X_test is not None and y_test is not None:
+    if estimator is not None:
         y_predicted = estimator.predict(X_test)
         res_dict['R2_test'] = r2_score(y_test, y_predicted)
         res_dict['RMSE_test'] = mean_squared_error(
@@ -159,7 +159,7 @@ def results_searchcv(
     print(f"Cross-val RMSE:\n{res_dict['RMSE_cross-val']}")
     print(f"Cross-val MAE:\n{res_dict['MAE_cross-val']}")
     print(f"Best parameters found:\n{res_dict['best_params']}")
-    if X_test is not None and y_test is not None:
+    if estimator is not None:
         print(f"R-squared in test\n{res_dict['R2_test']}")
         print(
             f"RMSE in test:\n{res_dict['RMSE_test']}")
@@ -354,12 +354,15 @@ def plot_predictions(estimator, X_test, y_test, samples=20):
 
 def plot_visualizations(PATH,
                         estimator,
+                        X_train_val,
+                        y_train_val,
                         X_train,
                         y_train,
                         X_val,
                         y_val,
                         figsize=(12, 8),
                         learningcurve=True,
+                        predictionerror=True,
                         featureimportance=True,
                         residualsplot=True):
     """
@@ -391,10 +394,19 @@ def plot_visualizations(PATH,
         fig, ax = plt.subplots(1, 1, figsize=figsize)
         visualizer = LearningCurve(estimator, n_jobs=6)
         # Fit the data to the visualizer
-        visualizer.fit(X_train, y_train)
+        visualizer.fit(X_train_val, y_train_val)
         visualizer.show()           # Finalize and render the figure
         plt.savefig(
             f"{PATH}/learning_curve.png")
+        
+    if predictionerror:
+        fig, ax = plt.subplots(1, 1, figsize=figsize)
+        viz = PredictionError(estimator)
+        viz.fit(X_train, y_train)
+        viz.score(X_val, y_val)
+        viz.show()
+        plt.savefig(
+            f"{PATH}/prediction_error.png")        
 
     if residualsplot:
         fig, ax = plt.subplots(1, 1, figsize=figsize)
@@ -410,7 +422,7 @@ def plot_visualizations(PATH,
             estimator = estimator['estimator']
         fig, ax = plt.subplots(1, 1, figsize=figsize)
         viz = FeatureImportances(estimator)
-        viz.fit(X_train, y_train)
+        viz.fit(X_train_val, y_train_val)
         viz.show()
         plt.savefig(
             f"{PATH}/feature_importance.png")
@@ -482,6 +494,8 @@ def get_model_data(n_samples=None, ratio=None):
 
     df_train_val = pd.read_pickle(
         f"{root_project}/data/processed/train_val_set.pickle")
+    df_train_val_rev = pd.read_pickle(
+        f"{root_project}/data/processed/train_val_set_rev.pickle")
     df_v1_train_val = pd.read_pickle(
         f"{root_project}/data/processed/train_val_set_v1.pickle")
     df_v2_train_val = pd.read_pickle(
@@ -497,4 +511,4 @@ def get_model_data(n_samples=None, ratio=None):
         df_train_val = df_train_val.sample(n_samples, random_state=42)
         return df_train_val
     else:
-        return df_train_val
+        return df_train_val_rev

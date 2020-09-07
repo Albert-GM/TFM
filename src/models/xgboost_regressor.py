@@ -9,6 +9,7 @@ from src.utils.help_func import results_searchcv,plot_predictions,\
     errors_distribution, plot_visualizations, get_model_data, results_estimator
 import xgboost as xgb
 from sklearn.model_selection import RandomizedSearchCV, train_test_split
+from sklearn.base import clone
 import pandas as pd
 from scipy.stats import randint
 import joblib
@@ -63,8 +64,10 @@ feat = df_train_val.shape[1]
 run_time = time.strftime("run_%d_%m_%Y-%H_%M_%S")
 MODEL_NAME = 'xgboost'
 # Path to save the model
-PATH = f"{root_project}/models/{MODEL_NAME}-{samples}-samples-{feat}-feat-{run_time}"
+PATH = f"{root_project}/models/tests/{MODEL_NAME}-{samples}-samples-{feat}-feat-{run_time}"
 LOAD_PATH = f"{root_project}/models/{MODEL_NAME}.pkl"
+MODEL_PATH = f"{PATH}/{MODEL_NAME}.pkl"
+RESULTS_PATH = f"{PATH}/results.txt"
 if not os.path.exists(PATH):
     os.makedirs(PATH)
     
@@ -90,19 +93,23 @@ random_search = RandomizedSearchCV( xgb.XGBRegressor(random_state=42),
 
 
 # random_search.fit(X_train_val, y_train_val)
-# joblib.dump(random_search, f"{PATH}/{MODEL_NAME}.pkl")
+# joblib.dump(random_search, MODEL_PATH)
 
 # Load a model
 random_search = joblib.load(LOAD_PATH)
+
+results_searchcv(random_search, RESULTS_PATH)
+
+estimator_plot = clone(estimator) # prevents yellowbrics from change pipe
+plot_visualizations(PATH, estimator_plot, X_train_val,
+                    y_train_val, X_train, y_train, X_val, y_val )
 
 # Train the model with only train data and best parameters of random search
 estimator = xgb.XGBRegressor(**random_search.best_params_, random_state=42)
 estimator.fit(X_train, y_train)
 
-results_searchcv(random_search, estimator, f"{PATH}/results.txt", X_val, y_val)
 
-plot_visualizations(PATH, estimator, X_train,
-                    y_train, X_val, y_val )
+
 
 plot_predictions(estimator, X_val, y_val, samples=50)
 
