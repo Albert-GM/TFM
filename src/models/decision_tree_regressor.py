@@ -25,6 +25,7 @@ from scipy.stats import randint
 
 # Get the data
 df_train_val = get_model_data()
+seed=42
 
 # Feature selection
 features = [
@@ -61,7 +62,7 @@ X_train_val = df_train_val.drop('total_deceased', axis=1)
 y_train_val = df_train_val['total_deceased']
 X_train, X_val, y_train, y_val = train_test_split(X_train_val,
                                                   y_train_val,
-                                                  random_state=42)
+                                                  random_state=seed)
 
 # Path naming
 samples = df_train_val.shape[0]
@@ -80,7 +81,7 @@ if not os.path.exists(PATH):
 
 pipe = Pipeline([
     ('imputer', SimpleImputer()),
-    ('estimator', DecisionTreeRegressor(random_state=42))
+    ('estimator', DecisionTreeRegressor(random_state=seed))
 ])
 
 param_dist = dict(

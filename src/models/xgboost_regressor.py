@@ -5,21 +5,24 @@ import re
 root_project = re.findall(r'(^\S*TFM)', os.getcwd())[0]
 sys.path.append(root_project)
 
-from src.utils.help_func import results_searchcv,plot_predictions,\
-    errors_distribution, plot_visualizations, get_model_data, results_estimator
+from src.utils.help_func import plot_predictions,\
+    errors_distribution, plot_visualizations, get_model_data, results_estimator,\
+    results_searchcv_bayes
 import xgboost as xgb
-from sklearn.model_selection import RandomizedSearchCV, train_test_split
+from sklearn.model_selection import train_test_split
 from sklearn.base import clone
 import pandas as pd
-from scipy.stats import randint
 import joblib
 import seaborn as sns
 sns.set()
 import time
-from scipy.stats import uniform, randint, loguniform
+from skopt import BayesSearchCV
+from skopt.space import Real, Integer
+from skopt.callbacks import DeltaYStopper
 
 # Get the data
-df_train_val = get_model_data(100000)
+df_train_val = get_model_data()
+seed=42
 
 # Feature selection
 features = [
@@ -56,7 +59,7 @@ X_train_val = df_train_val.drop('total_deceased', axis=1)
 y_train_val = df_train_val['total_deceased']
 X_train, X_val, y_train, y_val = train_test_split(X_train_val,
                                                   y_train_val,
-                                                  random_state=42)
+                                                  random_state=seed)
 
 # Path naming
 samples = df_train_val.shape[0]
@@ -72,49 +75,67 @@ if not os.path.exists(PATH):
     os.makedirs(PATH)
     
 
-param_dist = dict(
-    n_estimators=randint(low=15, high=30),
-    max_depth=randint(low=5, high=20),
-    learning_rate=loguniform(0.01, 1),
-    subsample=uniform(loc=0.6, scale=1-0.8),
-    colsample_bytree=uniform(loc=0.6, scale=1-0.8),
-    gamma=[0, 1, 2]
+
+search_space = dict(
+    n_estimators=Integer(15, 30),
+    max_depth=Integer(5, 20),
+    learning_rate=Real(0.01, 1),
+    subsample=Real(0.6, 1),
+    colsample_bytree=Real(0.6, 1),
+    gamma=Integer(0,3)
 )
 
-scoring = {'R2': 'r2', 'RMSE': 'neg_root_mean_squared_error',
-           'MAE': 'neg_mean_absolute_error'}
 
-random_search = RandomizedSearchCV( xgb.XGBRegressor(random_state=42),
-                                   param_distributions=param_dist,
-                                   scoring=scoring,
-                                   refit='R2',
-                                   verbose=1,
-                                   n_iter=50, cv=3, n_jobs=-1)
+scores = []
+i = 0
+def on_step(optim_result, n_last=10):
+    """
+    Callback meant to view scores after each iteration while performing Bayesian
+    Optimization in Skopt. Stops the optimization if the score in the last
+    n_last iterations are equal."""
+    global i
+    i += 1
+    scores.append(opt.best_score_)
+    print(f"best score: {scores[-1]}")
+    if i > n_last and len(set(scores[i-n_last:])) <= 1:
+        return True
 
+    
+opt = BayesSearchCV(xgb.XGBRegressor(random_state=seed), search_space,
+                    n_iter=32, cv=3, n_jobs=-1)
 
-# random_search.fit(X_train_val, y_train_val)
-# joblib.dump(random_search, MODEL_PATH)
+# Uncomment next lines to train the model
+# start= time.time()
+# opt.fit(X_train_val, y_train_val, callback=on_step)
+# joblib.dump(opt, MODEL_PATH)
+# print("="*20)
+# print(f"Training time: {time.time() - start} seconds")
+# print(f"Best score cross-val: {opt.best_score_}")
+# print("="*20)
+
 
 # Load a model
-random_search = joblib.load(LOAD_PATH)
+opt = joblib.load(LOAD_PATH)
 
-results_searchcv(random_search, RESULTS_PATH)
+
+results_searchcv_bayes(opt, RESULTS_PATH)
+
+
+estimator = xgb.XGBRegressor(**opt.best_params_, random_state=seed)
+
+
 
 estimator_plot = clone(estimator) # prevents yellowbrics from change pipe
 plot_visualizations(PATH, estimator_plot, X_train_val,
                     y_train_val, X_train, y_train, X_val, y_val )
 
-# Train the model with only train data and best parameters of random search
-estimator = xgb.XGBRegressor(**random_search.best_params_, random_state=42)
+# Train the pipe with only train data and best parameters of random search
 estimator.fit(X_train, y_train)
-
-
 
 
 plot_predictions(estimator, X_val, y_val, samples=50)
 
-errors_distribution(estimator, X_val, y_val, df_train_val, n=1000 )
-
+errors_distribution(estimator, X_val, y_val, df_train_val, n=1000)
 
 
 # Score in test set
@@ -127,8 +148,8 @@ X_test = df_test.drop('total_deceased', axis=1)
 y_test = df_test['total_deceased']
 
 
-results_estimator(random_search.best_estimator_, X_test, y_test)
-plot_predictions(random_search.best_estimator_, X_test, y_test, samples=50)
+results_estimator(opt.best_estimator_, X_test, y_test)
+plot_predictions(opt.best_estimator_, X_test, y_test, samples=50)
 
 
 

@@ -172,6 +172,64 @@ def results_searchcv(
     return res_dict
 
 
+def results_searchcv_bayes(
+        cv_estimator,
+        path=None,
+        estimator=None,
+        X_test=None,
+        y_test=None):
+    """
+    Prints out useful information about a cross-validated estimator. Given X_test,
+    and y_test, provides performance in data not seen by the estimator. If path
+    is not None, write the dictionary in a file.
+
+    Parameters
+    ----------
+    cv_estimator : RandomizedSearchCV or GridSeachCV
+        A trained cross-validated estimator.
+    estimator : sklearn estimator
+        A trained estimator, but not in X_test, y_test
+    path : string
+        Path to save the dictionary
+    X_test : pandas.DataFrame or array
+    y_test : pandas.DataFrame, pandas.Series or array
+
+    Returns
+    -------
+    Dictionary with the information.
+
+    """
+    res_dict = {}
+    res_dict['best_score_cross-val'] = cv_estimator.best_score_
+    res_dict['std_cross-val'] = cv_estimator.cv_results_['std_test_score'][cv_estimator.best_index_]
+    res_dict['best_params'] = cv_estimator.best_params_
+    if estimator is not None:
+        y_predicted = estimator.predict(X_test)
+        res_dict['R2_test'] = r2_score(y_test, y_predicted)
+        res_dict['RMSE_test'] = mean_squared_error(
+            y_test, y_predicted, squared=False)
+        res_dict['MAE_test'] = mean_absolute_error(y_test, y_predicted)
+
+    print("=" * 20)
+    print(f"Cross-val best score:\n{res_dict['best_score_cross-val']}")
+    print(
+        f"Cross-val std:\n{res_dict['std_cross-val']}")
+
+    print(f"Best parameters found:\n{res_dict['best_params']}")
+    if estimator is not None:
+        print(f"R-squared in test\n{res_dict['R2_test']}")
+        print(
+            f"RMSE in test:\n{res_dict['RMSE_test']}")
+        print(f"MAE in test:\n{res_dict['MAE_test']}")
+    print("=" * 20)
+
+    if path is not None:
+        with open(path, 'w') as file:
+            file.write(json.dumps(res_dict))
+    return res_dict
+
+
+
 def results_estimator(estimator, X_test, y_test):
 
     y_predicted = estimator.predict(X_test)
@@ -392,7 +450,7 @@ def plot_visualizations(PATH,
 
     if learningcurve:
         fig, ax = plt.subplots(1, 1, figsize=figsize)
-        visualizer = LearningCurve(estimator, n_jobs=6)
+        visualizer = LearningCurve(estimator, n_jobs=-1)
         # Fit the data to the visualizer
         visualizer.fit(X_train_val, y_train_val)
         visualizer.show()           # Finalize and render the figure
@@ -512,3 +570,6 @@ def get_model_data(n_samples=None, ratio=None):
         return df_train_val
     else:
         return df_train_val_rev
+    
+    
+
