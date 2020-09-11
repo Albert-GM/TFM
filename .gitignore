@@ -88,9 +88,11 @@ target/
 # Mypy cache
 .mypy_cache/
 
-# custom
+# folders
 /notebooks/
-
+/models/tests/
+/models/checkpoints/
+/models/my_logs
 # singles files
 test_set.pickle
 train_val_set.pickle
@@ -98,3 +100,4 @@ train_val_set_v1.pickle
 train_val_set_v2.pickle
 world_indicators_data.csv
 random_forest.pkl
+train_val_set_rev.pickle
