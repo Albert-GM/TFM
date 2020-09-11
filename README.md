@@ -59,7 +59,7 @@ Project Organization
     │                     `
     ├── data_flow.png      <- Scheme of the data transformation process.
     │
-    ├── AGM-TFM.pdf        <- Thesis.    
+    ├── thesis.pdf        <- Thesis.    
     │
     └── src                <- Source code for use in this project.
         │
