@@ -198,9 +198,11 @@ def update_graph(R0, Tr, omega, country, close, reaction): # as many arguments a
     df_sird.reset_index(inplace=True)
     df_sird = pd.melt(df_sird, id_vars='index',
                  value_vars=['susceptible', 'infected','recovered','deceased'])
-    df_sird.rename(columns={'index': 'weeks', 'value': 'proportion'}, inplace=True)
-    fig_sird = px.line(df_sird , x="weeks", y="proportion", color='variable',
-                       width=1300, height=500)
+    df_sird.rename(columns={'index': 'weeks', 'value': 'proportion',
+                            'variable': 'compartment'}, inplace=True)
+    fig_sird = px.line(df_sird , x="weeks", y="proportion", color='compartment',
+                       width=1300, height=600)
+    fig_sird.update_layout(legend_title_text='')
 
     return fig_world, fig_sird # as many arguments as ouptus, in the same order
 

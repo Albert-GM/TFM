@@ -82,10 +82,12 @@ def update_graph(N, I0, R0, Tr, omega, T): # as many arguments as inputs
     df_sird.reset_index(inplace=True)        
     df_sird = pd.melt(df_sird, id_vars='index',
                  value_vars=['susceptible', 'infected','recovered','deceased'])
-    df_sird.rename(columns={'index': 'days', 'value': 'individuals'}, inplace=True)
+    df_sird.rename(columns={'index': 'days', 'value': 'individuals',
+                            'variable': 'compartment'}, inplace=True)
     
-    fig = px.line(df_sird , x="days", y="individuals", color='variable',
+    fig = px.line(df_sird , x="days", y="individuals", color='compartment',
                        width=1300, height=500)
+    fig.update_layout(legend_title_text='')
 
     return fig
 
