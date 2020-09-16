@@ -96,7 +96,7 @@ def update_graph(N, I0, R0, Tr, omega, T): # as many arguments as inputs
 
 
 if __name__ == '__main__':
-    app.run_server(debug=True)
+    app.run_server(port=8050)
 
 
 
