@@ -6,29 +6,22 @@ root_project = re.findall(r'(^\S*TFM)', os.getcwd())[0]
 sys.path.append(root_project)
 
 
-import time
-from src.utils.help_func import plot_predictions, plot_visualizations,\
-    errors_distribution, get_model_data
+from src.utils.help_func import get_model_data, results_estimator
 from keras import backend as K
+from kerastuner.tuners import RandomSearch
+from kerastuner import Objective
 from tensorflow.python.client import device_lib
-from tensorflow.keras import initializers
-from tensorflow.keras.optimizers import Adam, Nadam
-from tensorflow.keras.models import Model, Sequential, load_model
-from tensorflow.keras.layers import Input, Dense, Dropout
+from tensorflow.keras.optimizers import Nadam
+from tensorflow.keras.models import  Sequential, load_model
+from tensorflow.keras.layers import Dense, Flatten
 from sklearn.impute import SimpleImputer
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import StandardScaler, OneHotEncoder
+from sklearn.preprocessing import StandardScaler
 from sklearn.pipeline import Pipeline
-from keras import backend as K
-import csv
 import seaborn as sns
-import datetime
-import json
-import pandas as pd
-import matplotlib.pyplot as plt
 import numpy as np
 from tensorflow import keras
-import tensorflow as tf
+import pandas as pd
 sns.set()
 
 
@@ -59,6 +52,7 @@ def coeff_determination(y_true, y_pred):
 
 # Get the data
 df_train_val = get_model_data()
+seed=42
 
 # Feature selection
 features = [
@@ -87,9 +81,13 @@ features = [
 
 df_train_val = df_train_val[features]
 
+print("=" * 20)
+print(f"Train_validation size: {df_train_val.shape}")
+print("=" * 20)
+
+
 X_train_val = df_train_val.drop('total_deceased', axis=1)
 y_train_val = df_train_val['total_deceased']
-
 X_train, X_val, y_train, y_val = train_test_split(X_train_val,
                                                   y_train_val,
                                                   random_state=42)
@@ -106,125 +104,77 @@ pipe = Pipeline([
 X_train_scaled = pipe.fit_transform(X_train.astype(np.float64))
 X_val_scaled = pipe.transform(X_val.astype(np.float64))
 
-# Path naming for saving tensorboard output and checkpoints
-root_logdir_tensorboard = f"{root_project}/models/my_logs"
-root_logdir_checkpoints = f"{root_project}/models/checkpoints"
+root_logdir_tensorboard = f"{root_project}/models/tests/my_logs"
+root_logdir_checkpoints = f"{root_project}/models/tests/checkpoints"
+
+def build_model(hp):
+    model = Sequential()
+    model.add(Flatten(input_shape=X_train_scaled.shape[1:]))
+    units=hp.Int('units_layer', min_value=10, max_value=100, step=5)
+        
+    for i in range(hp.Int('num_layers', 3, 12)):
+        model.add(Dense(units=units,
+                               activation='selu',
+                               kernel_initializer='lecun_normal'))
+    model.add(Dense(1))
+    model.compile(
+        optimizer=Nadam(),
+        loss='mean_squared_error',
+            metrics=[
+                'mean_absolute_error',
+                'mean_absolute_percentage_error',
+                coeff_determination])
+    return model
 
 
-# Train a combination of different number of layers - number of nodes
-# dense_layers = [8, 6, 4]
-# layer_sizes = [80, 60, 40, 20]
+tuner = RandomSearch(
+    build_model,
+    objective=Objective('val_coeff_determination', direction='max'),
+    max_trials=20,
+    executions_per_trial=1,
+    directory=f"{root_project}/models/tests/neural_networks",
+    project_name="tfm")
 
-# Train a unique neural network
-dense_layers = [7]
-layer_sizes = [80]
+tuner.search_space_summary()
 
-revision = '14'
+tensorboard_cb = keras.callbacks.TensorBoard(root_logdir_tensorboard)
+early_stopping_cb = keras.callbacks.EarlyStopping(
+                            patience=5, restore_best_weights=True)
+checkpoint_cb = keras.callbacks.ModelCheckpoint(
+    filepath=root_logdir_checkpoints, save_best_only=True, verbose=1)
 
-# Uncomment following lines to train
-# for dense_layer in dense_layers:
-#     for layer_size in layer_sizes:
-#         time.sleep(10)
-#         run_time = time.strftime("run_%d_%m_%Y-%H_%M_%S")
-#         NAME = f"{dense_layer}-layers-{layer_size}-nodes-{size_data}k-samples-{num_features}-feat-rev{revision}-{run_time}"
-#         print(NAME)
-#         model = Sequential()
-#         inputs = Input(X_train_scaled.shape[1:])
-
-#         for l in range(dense_layer - 1):
-#             model.add(
-#                 Dense(
-#                     layer_size,
-#                     activation='selu',
-#                     kernel_initializer='lecun_normal'))
-
-#         model.add(Dense(1))
-
-#         tensorboard_cb = keras.callbacks.TensorBoard(
-#             f"{root_logdir_tensorboard}/{NAME}")
-#         early_stopping_cb = keras.callbacks.EarlyStopping(
-#             patience=10, restore_best_weights=True)
-#         checkpoint_cb = keras.callbacks.ModelCheckpoint(
-#             filepath=f"{root_logdir_checkpoints}/{NAME}", save_best_only=True, verbose=1)
-
-#         model.compile(
-#             optimizer=Nadam(),
-#             loss='mean_squared_error',
-#             metrics=[
-#                 'mean_absolute_error',
-#                 'mean_absolute_percentage_error',
-#                 coeff_determination])
-
-#         history = model.fit(
-#             X_train_scaled,
-#             y_train,
-#             epochs=500,
-#             verbose=0,
-#             validation_data=(
-#                 X_val_scaled,
-#                 y_val),
-#             callbacks=[
-#                 tensorboard_cb,
-#                 early_stopping_cb,
-#                 checkpoint_cb])
-
-#         score_train = model.evaluate(X_train_scaled, y_train, verbose=0)
-#         score_val = model.evaluate(X_val_scaled, y_val, verbose=0)
-
-#         print('Train score:', score_train[0])
-#         print('Train MAE:', score_train[1])
-#         print('Train MAPE:', score_train[2])
-#         print('Train R2:', score_train[3])
-#         print('Test score:', score_val[0])
-#         print('Test MAE:', score_val[1])
-#         print('Test MAPE:', score_val[2])
-#         print('Train R2:', score_val[3])
-#         print('========')
+# Uncomment netxt lines to train the models
+# tuner.search(X_train_scaled, y_train,
+#              epochs=100,
+#              validation_data=(X_val_scaled, y_val),
+#              callbacks=[tensorboard_cb,
+#                         early_stopping_cb,
+#                         checkpoint_cb])
 
 
-# model.save(f"{NAME}.h5")
-
-# Load a model in LOAD PATH
-NAME = '7-layers-80-nodes-377k-samples-19-feat-rev14-run_03_09_2020-23_56_30.h5'
-LOAD_PATH = f"{root_project}/models/{NAME}"
-model = load_model(LOAD_PATH,
-                   custom_objects={'coeff_determination': coeff_determination})
-
-score_train = model.evaluate(X_train_scaled, y_train, verbose=0)
-score_val = model.evaluate(X_val_scaled, y_val, verbose=0)
-
-print('Train score:', score_train[0])
-print('Train MAE:', score_train[1])
-print('Train MAPE:', score_train[2])
-print('Train R2:', score_train[3])
-print('Val score:', score_val[0])
-print('Val MAE:', score_val[1])
-print('Val MAPE:', score_val[2])
-print('Val R2:', score_val[3])
-print('========')
+# tuner.results_summary()
 
 
-errors_distribution(model, X_val_scaled, y_val, df_train_val, n=1000)
+# Reload best model from project
+# tuner.reload()
+# estimator = tuner.get_best_models()[0]
 
+# Reload best model from .h5
+estimator = load_model(f"{root_project}/models/neural_network.h5",
+                       custom_objects={'coeff_determination': coeff_determination})
+
+
+
+# Score in validation set
+results_estimator(estimator, X_val_scaled, y_val)
 
 # Score in test set
 df_test = pd.read_pickle(
     f"{root_project}/data/processed/test_set.pickle")
-
 df_test = df_test[features]
-
 X_test = df_test.drop('total_deceased', axis=1)
 y_test = df_test['total_deceased']
 
 X_test_scaled = pipe.transform(X_test.astype(np.float64))
 
-score_test = model.evaluate(X_test_scaled, y_test, verbose=0)
-
-plot_predictions(model, X_test_scaled, y_test, samples=50)
-
-
-print('Test score:', score_test[0])
-print('Test MAE:', score_test[1])
-print('Test MAPE:', score_test[2])
-print('Test R2:', score_test[3])
-print('========')
+results_estimator(estimator, X_test_scaled, y_test)

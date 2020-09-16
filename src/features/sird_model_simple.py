@@ -72,7 +72,7 @@ def SIRD_model_simple(N, I0, Ro, T_r, omega, T):
     plt.legend()
     plt.tight_layout()
     
-    return None
+    return S, I, R, D
 
 
 if __name__ == '__main__':

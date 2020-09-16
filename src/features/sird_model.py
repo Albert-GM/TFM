@@ -127,17 +127,22 @@ class SIRD_model:
             # Compute deceased at t
             new_deceased = self.omega * SIRD[:, 1]
             # Updating SIRD matrix according epidemic transitions
-            SIRD[:, 0] = SIRD[:, 0] - new_infected
+            SIRD[:, 0] = SIRD[:, 0] - new_infected # va sumando los decimales, pero abajo siempre hago floor..por eso dan valores diferentes
             SIRD[:, 1] = SIRD[:, 1] + new_infected - \
                 new_recovered - new_deceased
             SIRD[:, 2] = SIRD[:, 2] + new_recovered
             SIRD[:, 3] = SIRD[:, 3] + new_deceased
             SIRD_p = check_array_div(SIRD, SIRD.sum(axis=1).reshape(-1, 1))
             # Saving information of the day t
-            SIRD_t[:, :, t] = np.floor(SIRD)
-            new_infected_t[:, t] = np.floor(new_infected)
-            new_recovered_t[:, t] = np.floor(new_recovered)
-            new_deceased_t[:, t] = np.floor(new_deceased)
+            SIRD_t[:, :, t] = SIRD
+            new_infected_t[:, t] = new_infected
+            new_recovered_t[:, t] = new_recovered
+            new_deceased_t[:, t] = new_deceased
+            
+            # SIRD_t[:, :, t] = np.floor(SIRD)
+            # new_infected_t[:, t] = np.floor(new_infected)
+            # new_recovered_t[:, t] = np.floor(new_recovered)
+            # new_deceased_t[:, t] = np.floor(new_deceased)            
 
             # Compute day first deceased and 2 weeks later
             if new_deceased_t.sum() > 0 and flag_deaths:
@@ -283,12 +288,12 @@ class SIRD_model:
 
 if __name__ == '__main__':
     # one simulation of the SIRD model with the spcified parameters
-    R0 = 3.139940
-    Tr = 22.677001
-    omega = 0.646553
-    n_closed = 6
+    R0 = 5
+    Tr = 20
+    omega = 0.2
+    n_closed = 0
     react_time = 10
-    i_country = 'PYF'
+    i_country = 'ESP'
     sird_instance = SIRD_model(R0, Tr, omega, i_country,
                                n_closed, react_time)
     sird_instance.simulate()
