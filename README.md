@@ -44,11 +44,12 @@ If you want to train the neural network in the project, it is advisable to creat
 SIRD model apps
 ------------
 To play with the apps first, you need to install the requirements file. There are two applications:
-- The complete SIRD model used in this thesis. Run dashboard.py in src/visualizatons
+- The complete SIRD model used in this thesis. Run `dashboard.py` in `src/visualizatons`
+![alt text](https://github.com/Albert-GM/TFM/blob/master/figures/sird.png?raw=true)
 
 
-
-- The simple SIRD model. Run dashboard_sird_simple.py in src/visualizatons
+- The simple SIRD model. Run `dashboard_sird_simple.py` in `src/visualizatons`
+![alt text](https://github.com/Albert-GM/TFM/blob/master/figures/sird_simple.png?raw=true)
 
 
 
