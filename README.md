@@ -41,6 +41,17 @@ To train the ML models, first, it is necessary to execute add_features.py that p
 If you want to train the neural network in the project, it is advisable to create a separate environment with Tensorflow and Keras libraries.
 
 
+SIRD model apps
+------------
+To play with the apps first, you need to install the requirements file. There are two applications:
+- The complete SIRD model used in this thesis. Run dashboard.py in src/visualizatons
+
+
+
+- The simple SIRD model. Run dashboard_sird_simple.py in src/visualizatons
+
+
+
 Project Organization
 ------------
 

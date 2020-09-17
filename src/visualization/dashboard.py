@@ -19,8 +19,7 @@ external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 
 df = pd.read_pickle(f"{root_project}/data/interim/country_info_nonans.pickle")
-
-
+countries = zip(df['country_name'].tolist(), df['country_code'].tolist())
 
 # App layout
 app.layout = html.Div([
@@ -35,7 +34,8 @@ app.layout = html.Div([
                       {"label": "2", "value": 2},
                       {"label": "4", "value": 4},
                       {"label": "6", "value": 6},
-                      {"label": "8", "value": 8}],
+                      {"label": "8", "value": 8},
+                      {"label": "10", "value": 10}],
                   multi=False,
                   value=4, 
                   ),
@@ -45,6 +45,7 @@ app.layout = html.Div([
                   options=[
                       {"label": "5", "value": 5},
                       {"label": "10", "value": 10},
+                      {"label": "15", "value": 15},
                       {"label": "20", "value": 20}],
                   multi=False,
                   value=10,
@@ -55,24 +56,31 @@ app.layout = html.Div([
                       {"label": "0.01", "value": 0.01},
                       {"label": "0.05", "value": 0.05},
                       {"label": "0.1", "value": 0.1},
-                      {"label": "0.2", "value": 0.2}
+                      {"label": "0.2", "value": 0.2},
+                      {"label": "0.5", "value": 0.5}
                       ],
                   multi=False,
                   value=0.01, 
                   ),
     
     html.Label("Select the initial country"),
-    dcc.Dropdown(id="select_country",
-                  options=[
-                      {"label": "Spain", "value": 'ESP'},
-                      {"label": "France", "value": 'FRA'},
-                      {"label": "China", "value": 'CHN'},
-                      {"label": "Italy", "value": 'ITA'},
-                      {"label": "United States", "value": 'USA'}
-                      ],
-                  multi=False,
-                  value='ESP', 
-                  ),
+    # dcc.Dropdown(id="select_country",
+    #               options=[
+    #                   {"label": "Spain", "value": 'ESP'},
+    #                   {"label": "France", "value": 'FRA'},
+    #                   {"label": "China", "value": 'CHN'},
+    #                   {"label": "Italy", "value": 'ITA'},
+    #                   {"label": "United States", "value": 'USA'}
+    #                   ],
+    #               multi=False,
+    #               value='ESP', 
+    #               ),
+    
+    dcc.Dropdown(id='select_country',
+                 options=[{'label':name, 'value':iso} for name, iso in countries],
+                 multi=False,
+                 value='ESP'),
+    
     
     html.Label("Select number of countries to close"),
     dcc.Dropdown(id="select_close",
@@ -81,6 +89,7 @@ app.layout = html.Div([
                       {"label": "1", "value": 1},
                       {"label": "5", "value": 5},
                       {"label": "10", "value": 10},
+                      {"label": "15", "value": 15},
                       {"label": "20", "value": 20}
                       ],
                   multi=False,
@@ -91,13 +100,16 @@ app.layout = html.Div([
     dcc.Dropdown(id="select_reaction",
                   options=[
                       {"label": "1", "value": 1},
+                      {"label": "3", "value": 3},
                       {"label": "5", "value": 5},
                       {"label": "10", "value": 10},
+                      {"label": "15", "value": 15},
                       {"label": "30", "value": 30}
                       ],
                   multi=False,
                   value=5, 
                   )]),
+        
     html.Div([
     dcc.Graph(id='world_map', figure={})
     ], style = {'width': '100%', 'display': 'flex', 'align-items': 'center', 'justify-content': 'center'}),
@@ -135,7 +147,7 @@ def update_graph(R0, Tr, omega, country, close, reaction): # as many arguments a
         'SIRD_t',
         'SIRD_p_t',
         'SIRD_world_p_t',
-        'SIRD_world_t'
+        'SIRD_world_t',
     ]
     
     
