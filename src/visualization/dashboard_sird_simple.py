@@ -44,11 +44,11 @@ app.layout = html.Div([
  
     html.Label("Select the simulation time"),
     dcc.Input(id="select_T", type="number", debounce=True,placeholder="Simulation time", value=200),
-    ],style={'float': 'left','margin': 'auto'}),
+    ],style={'float': 'left', 'margin':'align'}),
     
     html.Div([
     dcc.Graph(id='sird_model', figure={})
-    ],style={'float': 'right','margin': 'auto'}),
+    ],style={'float': 'right', 'margin':'align'}),
     
     
 ])

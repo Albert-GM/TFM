@@ -22,6 +22,7 @@ import seaborn as sns
 import numpy as np
 from tensorflow import keras
 import pandas as pd
+import matplotlib.pyplot as plt
 sns.set()
 
 
@@ -164,7 +165,6 @@ estimator = load_model(f"{root_project}/models/neural_network.h5",
                        custom_objects={'coeff_determination': coeff_determination})
 
 
-
 # Score in validation set
 results_estimator(estimator, X_val_scaled, y_val)
 
@@ -178,3 +178,11 @@ y_test = df_test['total_deceased']
 X_test_scaled = pipe.transform(X_test.astype(np.float64))
 
 results_estimator(estimator, X_test_scaled, y_test)
+
+predictions = estimator.predict(X_test_scaled).flatten()
+residuals = y_test.values - predictions
+fig, ax = plt.subplots(1, 1, figsize=(15, 10))
+sns.residplot(y_test, residuals, lowess=True, color="g", ax=ax)
+ax.set(title="Residuals for Neural Network",
+       xlabel="Predicted value",
+       ylabel="Residuals")

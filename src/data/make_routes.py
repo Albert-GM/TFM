@@ -17,13 +17,15 @@ df_iso = pd.read_csv(f"{root_project}/data/raw/tableconvert_iso.csv")
 with open(f"{root_project}/data/interim/iata_to_country.txt", 'r') as f:
     iata_to_country = json.load(f)
 
+# renaming columns
 df_routes.rename(columns={' source airport': 'source_airport',
                           ' destination apirport': 'destination_airport'},
                  inplace=True)
 
+# filtering by column
 df_routes = df_routes[['source_airport', 'destination_airport']]
 
-
+# mapping airport IATA to country
 df_routes['source_country'] = df_routes['source_airport'].map(iata_to_country)
 df_routes['destination_country'] = df_routes['destination_airport'].map(
     iata_to_country)
@@ -34,7 +36,7 @@ df_routes.dropna(inplace=True)
 df_routes = df_routes.loc[df_routes['source_country'] !=
                           df_routes['destination_country'], :]
 
-# Make graphs from dataframe
+# Makes graphs from dfs. Between airports and btw countries
 G_country = nx.from_pandas_edgelist(
     df_routes,
     'source_country',

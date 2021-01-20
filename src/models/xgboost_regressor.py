@@ -26,6 +26,9 @@ seed=42
 
 # Feature selection
 features = [
+    'R0',
+    'omega',
+    'Tc',
     'Tr',
     'inf_pow_1',
     'inf_pow_2',
@@ -105,17 +108,17 @@ opt = BayesSearchCV(xgb.XGBRegressor(random_state=seed), search_space,
                     n_iter=32, cv=3, n_jobs=-1)
 
 # Uncomment next lines to train the model
-# start= time.time()
-# opt.fit(X_train_val, y_train_val, callback=on_step)
-# joblib.dump(opt, MODEL_PATH)
-# print("="*20)
-# print(f"Training time: {time.time() - start} seconds")
-# print(f"Best score cross-val: {opt.best_score_}")
-# print("="*20)
+start= time.time()
+opt.fit(X_train_val, y_train_val, callback=on_step)
+joblib.dump(opt, MODEL_PATH)
+print("="*20)
+print(f"Training time: {time.time() - start} seconds")
+print(f"Best score cross-val: {opt.best_score_}")
+print("="*20)
 
 
 # Load a model
-opt = joblib.load(LOAD_PATH)
+# opt = joblib.load(LOAD_PATH)
 
 
 results_searchcv_bayes(opt, RESULTS_PATH)
