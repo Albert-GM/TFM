@@ -3,11 +3,13 @@
 # =============================================================================
 
 import numpy as np
+from scipy.stats import truncexpon
+
 
 def top_k_countries(n_closed, df, idx_initial):
     """
-    Computes the top countries with more traffic of tourism (arrivals+departures)
-    according the parameter n_closed, that indicates how many countries to close.
+    Computes the top k countries with more traffic of tourism (arrivals+departures)
+    where k=n_closed, which indicates how many countries to close.
 
     Parameters
     ----------
@@ -54,9 +56,10 @@ def countries_reaction(t, react_time, top_countries):
 
     country_react = {}
     for country in top_countries:
-        country_react[country] = np.random.exponential(scale=2,
-            size=1).astype('int') + react_time + t
-
+        # country_react[country] = np.random.exponential(scale=2,
+        #     size=1).astype('int') + react_time + t
+        country_react[country] = t + truncexpon.rvs(
+            loc=react_time, b=react_time + 30, size=1).astype('int')
     flag = 0
 
     return country_react, flag
@@ -129,7 +132,7 @@ def check_array_div(n, d):
     
     return np.divide(n, d, out=np.zeros_like(n), where=d!=0)
 
-def infection_power(new_infected_world_t, SIRD_world_t, day_1, day_2):
+def infection_power(new_infected_world_t, SIRD_world_t, day_1, day_2, N):
     """
     Computes some parameters related with the infecting power of the disease.
 
@@ -147,17 +150,22 @@ def infection_power(new_infected_world_t, SIRD_world_t, day_1, day_2):
     gradient : np.array
 
     """
+    
     if day_2 == 0:
-        slope_1, slope_2, gradient = 0, 0, 0
+        ratio_1, ratio_2, gradient, sum_gradient, p_inf = 0, 0, 0, 0, 0 # there have been no deceased
     else:
-        slope_1 = new_infected_world_t[day_1:day_2].sum() / (day_2 - day_1)
-    
-        slope_2 = check_division((SIRD_world_t[1, day_2] -
+        ratio_1 = new_infected_world_t[day_1:day_2].sum() / (day_2 - day_1)
+        
+        ratio_2 = check_division((SIRD_world_t[1, day_2] -
                    SIRD_world_t[1, day_1]),  SIRD_world_t[1, day_1])
-    
+        #slope_2 could be negative is number of infected decrease
         gradient = np.gradient(SIRD_world_t[1, day_1:day_2])
-
-    return slope_1, slope_2, gradient
+        sum_gradient = gradient.sum()
+        
+        p_inf = new_infected_world_t[day_1:day_2].sum() / N
+        
+        
+    return ratio_1, ratio_2, gradient, sum_gradient, p_inf
 
 def mortality_power(new_deceased_world_t, new_infected_world_t, SIRD_world_t,
                     day_1, day_2):
@@ -181,7 +189,7 @@ def mortality_power(new_deceased_world_t, new_infected_world_t, SIRD_world_t,
 
     """
     if day_2 == 0:
-        ratio_1, ratio_2, ratio_3, gradient = 0, 0, 0, 0
+        ratio_1, ratio_2, ratio_3, gradient, sum_gradient = 0, 0, 0, 0, 0
     else:
         ratio_1 = check_division(new_deceased_world_t[:day_2].sum(),
                                 new_infected_world_t[day_1:day_2].sum())
@@ -194,5 +202,6 @@ def mortality_power(new_deceased_world_t, new_infected_world_t, SIRD_world_t,
 
     
         gradient = np.gradient(new_deceased_world_t[day_1:day_2])
+        sum_gradient = gradient.sum()
 
-    return ratio_1, ratio_2, ratio_3, gradient
+    return ratio_1, ratio_2, ratio_3, gradient, sum_gradient

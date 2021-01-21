@@ -1,8 +1,7 @@
 # =============================================================================
 # Fills nans in the country dataframe and creates a new dataframe.
 # The objective is not to create a model as accurate as possible to fill in the
-# nans, but simply to use a methodology more precise than assigning some kind of
-# statistic
+# nans, but to use an imputation technique more precise.
 # =============================================================================
 
 
@@ -25,7 +24,8 @@ from scipy.stats import randint
 
 df_countries = pd.read_pickle(f"{root_project}/data/interim/country_info.pickle")
 
-# Fill departures
+# Filling nans in DEPARTURES
+# dropping columns not that are not useful for the ml model
 df_model = df_countries[
     [
         'total_pop',
@@ -38,17 +38,19 @@ df_model = df_countries[
     ]
 ]
 
+# predicting nan in departures
+# splits train-test sets from the samples to predict
 df_model_train_test = df_model.loc[~df_model['departures'].isna()]
 df_model_predict = df_model.loc[df_model['departures'].isna()]
-
+# splits features and target
 X_train_test = df_model_train_test.drop('departures', axis=1)
 y_train_test = df_model_train_test['departures']
-
+# splits training set and test set
 X_train, X_test, y_train, y_test = train_test_split(
     X_train_test, y_train_test, random_state=42)
 
 
-# Train the model
+# Training the model
 rnd_reg = Pipeline(
     [
         ('preprocess', SimpleImputer()),
@@ -56,6 +58,7 @@ rnd_reg = Pipeline(
     ]
 )
 
+# randomized search
 # Number of trees in random forest
 n_estimators = [int(x) for x in np.linspace(start=200, stop=2000, num=10)]
 # Number of features to consider at every split
@@ -80,6 +83,7 @@ random_grid = {
     'regressor__bootstrap': bootstrap,
 }
 
+# defining scoring metrics to evaluate the model 
 scoring = {'R2': 'r2', 'RMSE': 'neg_root_mean_squared_error',
            'MAE': 'neg_mean_absolute_error'}
 
@@ -87,7 +91,7 @@ randomsearch = RandomizedSearchCV(
     rnd_reg,
     random_grid,
     scoring=scoring,
-    refit='R2',
+    refit='R2', # optimizing for r2
     random_state=42,
     n_iter=100,
     n_jobs=-1,
@@ -98,9 +102,10 @@ randomsearch = RandomizedSearchCV(
 
 randomsearch = joblib.load(f"{root_project}/models/randomsearch_departures.pkl")
 
-results_searchcv(randomsearch, X_test, y_test)
+results_searchcv(randomsearch)
 
-# Gridsearch based on the results of randomsearch
+
+# fine-tuning the model. gridsearch based on previous results
 params = {
     'preprocess__strategy': ['median'],
     'regressor__n_estimators': [150, 200, 250],
@@ -128,10 +133,10 @@ gridsearch = GridSearchCV(
 gridsearch = joblib.load(f"{root_project}/models/gridsearch_departures.pkl")
 
 
-results_searchcv(gridsearch, X_test, y_test)
+results_searchcv(gridsearch)
 
 
-# Fill nans in departures with predicted values
+# Filling nans in departures with predicted values
 X_predict = df_model_predict.drop('departures', axis=1)
 df_model_predict['predicted_departures'] = gridsearch.predict(X_predict)
 df_countries['departures'].fillna(
@@ -143,8 +148,8 @@ df_countries['departures/population'] = df_countries['departures'] / \
     df_countries['total_pop']
 
 
-# Train a model to fill nans in arrivals, add the new predicted values from
-# the previous step
+# predicting nans in ARRIVALS
+# fill departures with the values predicted in the previous step
 df_model = df_countries[
     [
         'total_pop',
@@ -184,7 +189,7 @@ randomsearch = RandomizedSearchCV(
 
 randomsearch = joblib.load(f"{root_project}/models/randomsearch_arrivals.pkl")
 
-results_searchcv(randomsearch, X_test, y_test)
+results_searchcv(randomsearch)
 
 # Fill nans in arrivals with predicted values
 X_predict = df_model_predict.drop('arrivals', axis=1)

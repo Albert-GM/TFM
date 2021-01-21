@@ -16,15 +16,12 @@ import pandas as pd
 
 
 
-# Read necessary data
-
+# Reads necessary data
 df_indicators = pd.read_csv(
     f"{root_project}/data/raw/world_indicators_data.csv.zip")
-
-
 df_pop_plus = pd.read_csv(
     f"{root_project}/data/raw/country_population.csv",
-    skiprows=4)
+    skiprows=4) # other source of information for countries
 df_location = pd.read_csv(f"{root_project}/data/raw/tableconvert_iso.csv")
 df_continents = pd.read_csv(
     f"{root_project}/data/raw/country_to_continent.csv")
@@ -32,7 +29,7 @@ G = nx.read_gpickle(f"{root_project}/data/interim/routes_countries.gpickle")
 with open(f"{root_project}/data/interim/alpha2_to_alpha3.txt", 'r') as file:
     alpha2_to_alpha3 = json.load(file)
 
-# Extract data about population
+# Extracts data about population
 df_male = last_values(extract_indicator(df_indicators, 'Population, male'))
 df_male.rename(
     columns={
@@ -53,7 +50,7 @@ dict_pop = df_pop_plus[['Country Code', '2019']].set_index(
 df_population['total_pop'] = df_population['total_pop'].fillna(
     df_population['country_code'].map(dict_pop))
 
-# Extract data about arrivals
+# Extracts data about arrivals by country
 df_arrivals = extract_indicator(df_indicators,
                                 'International tourism, number of arrivals')
 df_arrivals = last_values(df_arrivals)
@@ -64,7 +61,7 @@ df_arrivals.rename(
         'last_value': 'arrivals'},
     inplace=True)
 
-# Extract data about departures
+# Extract data about departures by country
 df_departures = extract_indicator(
     df_indicators,
     'International tourism, number of departures')
@@ -76,7 +73,7 @@ df_departures.rename(
         'last_value': 'departures'},
     inplace=True)
 
-# Merge dataframes
+# Merging dataframes of population and arrivals/departures
 df_full = pd.merge(df_population, df_arrivals)
 df_full = pd.merge(df_full, df_departures)
 df_location.rename(
@@ -85,7 +82,7 @@ df_location.rename(
         'Latitude (average)': 'latitude',
         'Longitude (average)': 'longitude'},
     inplace=True)
-# Drop duplicates in df_location and merge
+# Drops duplicates in df_location and merges
 df_full = pd.merge(df_full,
                    df_location.loc[:,
                                    ['country_code',
@@ -99,14 +96,14 @@ df_full = pd.merge(df_full,
 df_full.dropna(subset=['latitude'], inplace=True)
 df_full.reset_index(drop=True, inplace=True)
 
-# Add ratios
+# Adding ratios
 df_full['arrivals/total'] = df_full['arrivals'] / np.sum(df_full['arrivals'])
 df_full['departures/total'] = df_full['departures'] / \
     np.sum(df_full['departures'])
 df_full['arrivals/population'] = df_full['arrivals'] / df_full['total_pop']
 df_full['departures/population'] = df_full['departures'] / df_full['total_pop']
 
-# Add continent
+# Adding continent
 df_continents.rename(
     columns={
         'Three_Letter_Country_Code': 'country_code',

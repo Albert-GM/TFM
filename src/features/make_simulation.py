@@ -23,10 +23,10 @@ from src.features.sird_model import SIRD_model
 df_countries = pd.read_pickle(
     f"{root_project}/data/interim/country_info_final.pickle")
 
-# Paramater space to explore
-# In uniform distribution if max value desired is X, scale=X-loc
+# Parameter space to explore
+# In uniform distribution, loc=min and if max value desired is X, scale=X-loc
 # In randint distribution if max value desired is X, high=X+low
-R0 = uniform(loc=2, scale=18) 
+R0 = uniform(loc=2, scale=16) 
 Tr = uniform(loc=2, scale=28)
 omega = truncexpon(loc=0.01, b=1-0.01) # Exponential truncated to maximum value b
 n_closed = randint(low=0, high=20)
@@ -50,7 +50,7 @@ param_grid = {'R0' : R0,
               'countries' : countries }
 
 
-n_simulations = 60000 # specify the number of simulations to make
+n_simulations = 10000 # specify the number of simulations to make
 param_list = list(ParameterSampler(param_grid, n_iter=n_simulations))
 
 # Features to keep
@@ -62,9 +62,12 @@ dict_keys = [
     'omega',
     'inf_pow_1',
     'inf_pow_2',
+    'sum_gradient_inf',
+    'p_inf',
     'mort_pow_1',
     'mort_pow_2',
     'mort_pow_3',
+    'sum_gradient_mort',
     'n_closed',
     'react_time',
     'total_infected',
@@ -72,7 +75,7 @@ dict_keys = [
     'total_recovered']
 
 
-file_name = 'simulation_results_v1_rev.csv'
+file_name = 'simulation_results_REV2.csv'
 # Un comment when simulating model based on errors
 # file_name = 'simulation_results_v2.csv' 
 

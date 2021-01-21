@@ -49,13 +49,14 @@ G_airport = nx.from_pandas_edgelist(
     'destination_airport',
     create_using=nx.DiGraph())
 
-# Drop country if country is not in df_iso
+# Drops country if country is not in df_iso
 H_country = G_country.copy()
 for country in G_country:
     if country not in df_iso['Alpha-2 code'].unique():
         H_country.remove_node(country)
 
-# Add airport information to airport graph
+# Adds airport information to airport graph
+# for each airport adds full name, country, coordinates and continent
 df_iata.drop_duplicates(subset='iata_code', inplace=True)
 
 H_airport = G_airport.copy()

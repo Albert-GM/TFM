@@ -173,7 +173,15 @@ def feature_transf_log(df):
     df['mort_pow_3_log'] = np.log(
         df['mort_pow_3'].replace(
             0, np.finfo(float).eps))
-
+    df['sum_gradient_inf_log'] = np.log(
+    df['sum_gradient_inf'].replace(
+        0, np.finfo(float).eps))
+    df['p_inf_log'] = np.log(
+    df['p_inf'].replace(
+        0, np.finfo(float).eps))
+    df['sum_gradient_mort_log'] = np.log(
+    df['sum_gradient_mort'].replace(
+        0, np.finfo(float).eps))
     return df
 
 
