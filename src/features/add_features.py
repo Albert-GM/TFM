@@ -158,30 +158,59 @@ def feature_transf_log(df):
 
     """
     # Replace 0 by a infinitesimal number to avoid -infinity
-    df['inf_pow_1_log'] = np.log(
-        df['inf_pow_1'].replace(
-            0, np.finfo(float).eps))
-    df['inf_pow_2_log'] = np.log(
-        df['inf_pow_2'].replace(
-            0, np.finfo(float).eps))
-    df['mort_pow_1_log'] = np.log(
-        df['mort_pow_1'].replace(
-            0, np.finfo(float).eps))
-    df['mort_pow_2_log'] = np.log(
-        df['mort_pow_2'].replace(
-            0, np.finfo(float).eps))
-    df['mort_pow_3_log'] = np.log(
-        df['mort_pow_3'].replace(
-            0, np.finfo(float).eps))
-    df['sum_gradient_inf_log'] = np.log(
-    df['sum_gradient_inf'].replace(
-        0, np.finfo(float).eps))
-    df['p_inf_log'] = np.log(
-    df['p_inf'].replace(
-        0, np.finfo(float).eps))
-    df['sum_gradient_mort_log'] = np.log(
-    df['sum_gradient_mort'].replace(
-        0, np.finfo(float).eps))
+    features = [
+        'total_deceased',
+        'inf_pow_1',
+        'inf_pow_2',
+        'mort_pow_1',
+        'mort_pow_2',
+        'mort_pow_3',
+        'sum_gradient_inf',
+        'p_inf',
+        'sum_gradient_mort',
+        'betweenness',
+        'degree',
+        'country_pop',
+        'country_departures',
+        'exposed_pop'
+        ]
+    
+    for feat in features:
+        name_log = f"{feat}_log"
+        df[name_log] = np.log(df[feat].replace(0, np.finfo(float).eps))
+    
+    
+    # df['inf_pow_1_log'] = np.log(
+    #     df['inf_pow_1'].replace(
+    #         0, np.finfo(float).eps))
+    # df['inf_pow_2_log'] = np.log(
+    #     df['inf_pow_2'].replace(
+    #         0, np.finfo(float).eps))
+    # df['mort_pow_1_log'] = np.log(
+    #     df['mort_pow_1'].replace(
+    #         0, np.finfo(float).eps))
+    # df['mort_pow_2_log'] = np.log(
+    #     df['mort_pow_2'].replace(
+    #         0, np.finfo(float).eps))
+    # df['mort_pow_3_log'] = np.log(
+    #     df['mort_pow_3'].replace(
+    #         0, np.finfo(float).eps))
+    # df['sum_gradient_inf_log'] = np.log(
+    # df['sum_gradient_inf'].replace(
+    #     0, np.finfo(float).eps))
+    # df['p_inf_log'] = np.log(
+    # df['p_inf'].replace(
+    #     0, np.finfo(float).eps))
+    # df['sum_gradient_mort_log'] = np.log(
+    # df['sum_gradient_mort'].replace(
+    #     0, np.finfo(float).eps))
+    # df['betweenness_log'] = np.log(
+    # df['betweenness'].replace(
+    #     0, np.finfo(float).eps))    
+    # df['degree_log'] = np.log(
+    # df['degree'].replace(
+    #     0, np.finfo(float).eps))        
+    
     return df
 
 
@@ -204,7 +233,10 @@ def add_features(df):
     df = feature_total_dep(df)
     df = feature_exposed_pop(df)
     df = feature_transf_log(df)
-    
+    df_pop = pd.read_pickle(
+    f"{root_project}/data/interim/country_info_final.pickle")
+    N = df_pop['total_pop'].sum()
+    df['affected_population'] = df['total_deceased'] / N
     return df
 
 if __name__ == '__main__':

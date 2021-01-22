@@ -28,8 +28,8 @@ def top_k_countries(n_closed, df, idx_initial):
 
     traffic = df['arrivals'] + df['departures']
     idx_countries = list(traffic.nlargest(n=n_closed).index)
-    if idx_initial not in idx_countries and n_closed != 0:
-        idx_countries.append(idx_initial)
+    # if idx_initial not in idx_countries and n_closed != 0:
+    #     idx_countries.append(idx_initial)
 
     return idx_countries
 
@@ -55,11 +55,14 @@ def countries_reaction(t, react_time, top_countries):
     """
 
     country_react = {}
+    # print(t)
     for country in top_countries:
-        # country_react[country] = np.random.exponential(scale=2,
-        #     size=1).astype('int') + react_time + t
-        country_react[country] = t + truncexpon.rvs(
-            loc=react_time, b=react_time + 30, size=1).astype('int')
+        delay = truncexpon.rvs(loc=react_time, b=10, size=1).astype('int')
+        # print(f"{country} reaction {delay}")
+        country_react[country] = t + delay
+        # country_react[country] = t + truncexpon.rvs(
+        #     loc=react_time, b=react_time + 30, size=1).astype('int')
+        # country_react[country] = t + react_time
     flag = 0
 
     return country_react, flag

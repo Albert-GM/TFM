@@ -31,8 +31,8 @@ class SIRD_model:
     OD = np.load(f"{root_project}/data/interim/od_matrix.npy")
     sim_time = 730
     initial_infected = 1
-    feat_time = 14 # number of days allowed to compute disease's features
-
+    # feat_time = 14 # number of days allowed to compute disease's features
+    feat_time = 30
     def __init__(self, R0, Tr, omega, i_country, n_closed, react_time):
 
         self.R0 = R0 # reproduction number
@@ -159,7 +159,7 @@ class SIRD_model:
                 # if there is quarantine, close countries
                 if self.n_closed > 0:
                     country_react, flag_react = countries_reaction(
-                        day_b, self.react_time, top_countries)
+                        day_a, self.react_time, top_countries)
                 flag_deaths = 0 
 
             if not flag_react:
@@ -183,7 +183,7 @@ class SIRD_model:
             'total_recovered': new_recovered_t.sum(),
             'total_deceased': new_deceased_t.sum(),
             'day_a': day_a,
-            'day_b': day_b
+            'day_b': day_b,
         }
 
         self.sim_results_['SIRD_world_p_t'] = self.sim_results_[
@@ -304,8 +304,8 @@ if __name__ == '__main__':
     R0 = 5
     Tr = 10
     omega = 0.3
-    n_closed = 0
-    react_time = 10
+    n_closed = 5
+    react_time = 20
     i_country = 'ESP'
     sird_instance = SIRD_model(R0, Tr, omega, i_country,
                                n_closed, react_time)

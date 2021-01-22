@@ -30,7 +30,9 @@ R0 = uniform(loc=2, scale=16)
 Tr = uniform(loc=2, scale=28)
 omega = truncexpon(loc=0.01, b=1-0.01) # Exponential truncated to maximum value b
 n_closed = randint(low=0, high=20)
-react_time = randint(low=1, high=31)
+# react_time = randint(low=1, high=31)
+react_time = randint(low=1, high=21)
+
 countries = list(df_countries['country_code'].values) # All countries in df
 
 
@@ -75,7 +77,7 @@ dict_keys = [
     'total_recovered']
 
 
-file_name = 'simulation_results_REV2.csv'
+file_name = 'simulation_results_REV3.csv'
 # Un comment when simulating model based on errors
 # file_name = 'simulation_results_v2.csv' 
 
