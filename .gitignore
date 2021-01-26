@@ -94,6 +94,7 @@ target/
 /models/checkpoints/
 /models/my_logs
 /data
+/rev2/models/
 # singles files
 test_set.pickle
 train_val_set.pickle
