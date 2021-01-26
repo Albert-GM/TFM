@@ -146,29 +146,23 @@ def infection_power(new_infected_world_t, SIRD_world_t, day_1, day_2, N):
     day_1 : float
     day_2 : float
 
-    Returns
-    -------
-    slope_1 : float
-    slope_2 : float
-    gradient : np.array
-
     """
     
     if day_2 == 0:
-        ratio_1, ratio_2, gradient, sum_gradient, p_inf = 0, 0, 0, 0, 0 # there have been no deceased
+        ind_inf_1, ind_inf_2, ind_inf_grad, ind_inf_sumgrad, ind_inf_p = 0, 0, 0, 0, 0 # there have been no deceased
     else:
-        ratio_1 = new_infected_world_t[day_1:day_2].sum() / (day_2 - day_1)
+        ind_inf_1 = new_infected_world_t[day_1:day_2].sum() / (day_2 - day_1)
         
-        ratio_2 = check_division((SIRD_world_t[1, day_2] -
+        ind_inf_2 = check_division((SIRD_world_t[1, day_2] -
                    SIRD_world_t[1, day_1]),  SIRD_world_t[1, day_1])
         #slope_2 could be negative is number of infected decrease
-        gradient = np.gradient(SIRD_world_t[1, day_1:day_2])
-        sum_gradient = gradient.sum()
+        ind_inf_grad = np.gradient(SIRD_world_t[1, day_1:day_2])
+        ind_inf_sumgrad = ind_inf_grad.sum()
         
-        p_inf = new_infected_world_t[day_1:day_2].sum() / N
+        ind_inf_p = new_infected_world_t[day_1:day_2].sum() / N
         
         
-    return ratio_1, ratio_2, gradient, sum_gradient, p_inf
+    return ind_inf_1, ind_inf_2, ind_inf_grad, ind_inf_sumgrad, ind_inf_p
 
 def mortality_power(new_deceased_world_t, new_infected_world_t, SIRD_world_t,
                     day_1, day_2):
@@ -183,28 +177,21 @@ def mortality_power(new_deceased_world_t, new_infected_world_t, SIRD_world_t,
     day_1 : float
     day_2 : float
 
-    Returns
-    -------
-    ratio_1 : float
-    ratio_2 : float
-    ratio_3 : float
-    gradient : np.array
-
     """
     if day_2 == 0:
-        ratio_1, ratio_2, ratio_3, gradient, sum_gradient = 0, 0, 0, 0, 0
+        ind_mort_1, ind_mort_2, ind_mort_3, ind_mort_grad, ind_mort_sumgrad = 0, 0, 0, 0, 0
     else:
-        ratio_1 = check_division(new_deceased_world_t[:day_2].sum(),
+        ind_mort_1 = check_division(new_deceased_world_t[:day_2].sum(),
                                 new_infected_world_t[day_1:day_2].sum())
         
-        ratio_2 = check_division(new_deceased_world_t[day_1:day_2].sum(),
+        ind_mort_2 = check_division(new_deceased_world_t[day_1:day_2].sum(),
                                  SIRD_world_t[1, day_2] - SIRD_world_t[1, day_1])
         
-        ratio_3 = check_division(new_deceased_world_t[day_1:day_2].sum(),
+        ind_mort_3 = check_division(new_deceased_world_t[day_1:day_2].sum(),
                                  SIRD_world_t[2, day_2] - SIRD_world_t[2, day_1])
 
     
-        gradient = np.gradient(new_deceased_world_t[day_1:day_2])
-        sum_gradient = gradient.sum()
+        ind_mort_grad = np.gradient(new_deceased_world_t[day_1:day_2])
+        ind_mort_sumgrad = ind_mort_grad.sum()
 
-    return ratio_1, ratio_2, ratio_3, gradient, sum_gradient
+    return ind_mort_1, ind_mort_2, ind_mort_3, ind_mort_grad, ind_mort_sumgrad

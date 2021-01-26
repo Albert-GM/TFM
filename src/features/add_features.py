@@ -160,14 +160,14 @@ def feature_transf_log(df):
     # Replace 0 by a infinitesimal number to avoid -infinity
     features = [
         'total_deceased',
-        'inf_pow_1',
-        'inf_pow_2',
-        'mort_pow_1',
-        'mort_pow_2',
-        'mort_pow_3',
-        'sum_gradient_inf',
-        'p_inf',
-        'sum_gradient_mort',
+        'ind_inf_1',
+        'ind_inf_2',
+        'ind_inf_sumgrad',
+        'ind_inf_p',
+        'ind_mort_1',
+        'ind_mort_2',
+        'ind_mort_3',
+        'ind_mort_sumgrad',
         'betweenness',
         'degree',
         'country_pop',
@@ -178,38 +178,7 @@ def feature_transf_log(df):
     for feat in features:
         name_log = f"{feat}_log"
         df[name_log] = np.log(df[feat].replace(0, np.finfo(float).eps))
-    
-    
-    # df['inf_pow_1_log'] = np.log(
-    #     df['inf_pow_1'].replace(
-    #         0, np.finfo(float).eps))
-    # df['inf_pow_2_log'] = np.log(
-    #     df['inf_pow_2'].replace(
-    #         0, np.finfo(float).eps))
-    # df['mort_pow_1_log'] = np.log(
-    #     df['mort_pow_1'].replace(
-    #         0, np.finfo(float).eps))
-    # df['mort_pow_2_log'] = np.log(
-    #     df['mort_pow_2'].replace(
-    #         0, np.finfo(float).eps))
-    # df['mort_pow_3_log'] = np.log(
-    #     df['mort_pow_3'].replace(
-    #         0, np.finfo(float).eps))
-    # df['sum_gradient_inf_log'] = np.log(
-    # df['sum_gradient_inf'].replace(
-    #     0, np.finfo(float).eps))
-    # df['p_inf_log'] = np.log(
-    # df['p_inf'].replace(
-    #     0, np.finfo(float).eps))
-    # df['sum_gradient_mort_log'] = np.log(
-    # df['sum_gradient_mort'].replace(
-    #     0, np.finfo(float).eps))
-    # df['betweenness_log'] = np.log(
-    # df['betweenness'].replace(
-    #     0, np.finfo(float).eps))    
-    # df['degree_log'] = np.log(
-    # df['degree'].replace(
-    #     0, np.finfo(float).eps))        
+        
     
     return df
 

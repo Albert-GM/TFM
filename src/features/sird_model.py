@@ -205,40 +205,40 @@ class SIRD_model:
 
         if self.sim_results_['new_deceased_world_t'].sum() > 0:
 
-            inf_pow_1, inf_pow_2, gradient_inf, \
-                sum_gradient_inf, p_inf = infection_power(
+            ind_inf_1, ind_inf_2, ind_inf_grad, \
+                ind_inf_sumgrad, ind_inf_p = infection_power(
                 self.sim_results_['new_infected_world_t'],
                 self.sim_results_['SIRD_world_t'],
                 self.sim_results_['day_a'],
                 self.sim_results_['day_b'],
                 self.N_i[self.idx_country])
 
-            mort_pow_1, mort_pow_2, mort_pow_3,\
-                gradient_mort, sum_gradient_mort = mortality_power(
+            ind_mort_1, ind_mort_2, ind_mort_3,\
+                ind_mort_grad, ind_mort_sumgrad = mortality_power(
                     self.sim_results_['new_deceased_world_t'],
                     self.sim_results_['new_infected_world_t'],
                     self.sim_results_['SIRD_world_t'],
                     self.sim_results_['day_a'],
                     self.sim_results_['day_b'])
         else:
-            inf_pow_1, inf_pow_2, gradient_inf,\
-                sum_gradient_inf, p_inf = 0, 0, np.array([0]), 0, 0
+            ind_inf_1, ind_inf_2, ind_inf_grad,\
+                ind_inf_sumgrad, ind_inf_p = 0, 0, np.array([0]), 0, 0
 
-            mort_pow_1, mort_pow_2, mort_pow_3, gradient_mort,\
-                sum_gradient_mort = 0, 0, 0, np.array([0]), 0
+            ind_mort_1, ind_mort_2, ind_mort_3, ind_mort_grad,\
+                ind_mort_sumgrad = 0, 0, 0, np.array([0]), 0
                                                                                 
 
         self.epidemic_features_ = {
-            'inf_pow_1': inf_pow_1,
-            'inf_pow_2': inf_pow_2,
-            'gradient_inf': gradient_inf,
-            'sum_gradient_inf': sum_gradient_inf,
-            'p_inf': p_inf,
-            'mort_pow_1': mort_pow_1,
-            'mort_pow_2': mort_pow_2,
-            'mort_pow_3': mort_pow_3,
-            'gradient_mort': gradient_mort,
-            'sum_gradient_mort': sum_gradient_mort
+            'ind_inf_1': ind_inf_1,
+            'ind_inf_2': ind_inf_2,
+            'ind_inf_grad': ind_inf_grad,
+            'ind_inf_sumgrad': ind_inf_sumgrad,
+            'ind_inf_p': ind_inf_p,
+            'ind_mort_1': ind_mort_1,
+            'ind_mort_2': ind_mort_2,
+            'ind_mort_3': ind_mort_3,
+            'ind_mort_grad': ind_mort_grad,
+            'ind_mort_sumgrad': ind_mort_sumgrad
             
         }
 

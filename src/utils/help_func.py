@@ -571,5 +571,19 @@ def get_model_data(n_samples=None, ratio=None):
     else:
         return df_train_val_rev
     
+
+def rename_indicators(df):
+    ind_names = [
+        ('ind_inf_1_log','ind_1.3'),
+        ('ind_inf_2_log','ind_1.4'),
+        ('ind_inf_sumgrad_log', 'ind_1.1'),
+        ('ind_inf_p_log', 'ind_1.2'),
+        ('ind_mort_1_log', 'ind_2.2'),
+        ('ind_mort_2_log', 'ind_2.3'),
+        ('ind_mort_3_log', 'ind_2.4'),
+        ('ind_mort_sumgrad_log', 'ind_2.1')
+        ]
     
+    return df.rename(columns=dict(ind_names))
+        
 

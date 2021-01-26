@@ -52,7 +52,7 @@ param_grid = {'R0' : R0,
               'countries' : countries }
 
 
-n_simulations = 10000 # specify the number of simulations to make
+n_simulations = 8000 # specify the number of simulations to make
 param_list = list(ParameterSampler(param_grid, n_iter=n_simulations))
 
 # Features to keep
@@ -62,22 +62,22 @@ dict_keys = [
     'Tc',
     'Tr',
     'omega',
-    'inf_pow_1',
-    'inf_pow_2',
-    'sum_gradient_inf',
-    'p_inf',
-    'mort_pow_1',
-    'mort_pow_2',
-    'mort_pow_3',
-    'sum_gradient_mort',
+    'ind_inf_1',
+    'ind_inf_2',
+    'ind_inf_sumgrad',
+    'ind_inf_p',
+    'ind_mort_1',
+    'ind_mort_2',
+    'ind_mort_3',
+    'ind_mort_sumgrad',
     'n_closed',
     'react_time',
     'total_infected',
     'total_deceased',
-    'total_recovered']
+    'total_recovered'
+    ]
 
-
-file_name = 'simulation_results_REV3.csv'
+file_name = 'simulation_results_REV4_test.csv'
 # Un comment when simulating model based on errors
 # file_name = 'simulation_results_v2.csv' 
 
